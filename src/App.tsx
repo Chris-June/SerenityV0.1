@@ -11,6 +11,7 @@ import { JournalPage } from '@/pages/JournalPage';
 import { InsightsPage } from '@/pages/InsightsPage';
 import { ExercisesPage } from '@/pages/ExercisesPage';
 import { ResourcesPage } from '@/pages/ResourcesPage';
+import { WellnessPage } from '@/pages/WellnessPage';
 
 function App() {
   const [started, setStarted] = useState(false);
@@ -50,6 +51,7 @@ function App() {
               <Route path="/insights" element={<InsightsPage />} />
               <Route path="/exercises" element={<ExercisesPage />} />
               <Route path="/resources" element={<ResourcesPage />} />
+              <Route path="/wellness" element={<WellnessPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

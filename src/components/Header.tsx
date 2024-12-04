@@ -1,4 +1,4 @@
-import { Menu, Heart, Sparkles, BookOpen, MessageCircle } from 'lucide-react';
+import { Menu, Heart, Sparkles, BookOpen, MessageCircle, Sun, BedDouble, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from './ThemeToggle';
 import {
@@ -16,6 +16,9 @@ const features = [
   { id: 'breathing', label: 'Breathing Exercise', icon: Sparkles },
   { id: 'coping', label: 'Coping Strategies', icon: BookOpen },
   { id: 'chat', label: 'AI Chat', icon: MessageCircle },
+  { id: 'affirmations', label: 'Affirmation Cards', icon: Sun },
+  { id: 'selfcare', label: 'Self-Care Reminders', icon: Bell },
+  { id: 'sleep', label: 'Sleep Tracker', icon: BedDouble },
 ];
 
 const navLinks = [
@@ -23,6 +26,7 @@ const navLinks = [
   { href: '/insights', label: 'Insights' },
   { href: '/exercises', label: 'Exercises' },
   { href: '/resources', label: 'Resources' },
+  { href: '/wellness', label: 'Wellness' },
 ];
 
 export function Header() {

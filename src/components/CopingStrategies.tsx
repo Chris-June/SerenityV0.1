@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat } from "@/context/ChatContext";
+import { cn } from "@/lib/utils";
 
 type MoodLevel = 1 | 2 | 3;
 
@@ -163,85 +164,104 @@ export function CopingStrategies() {
   const moodLevels: MoodLevel[] = [1, 2, 3];
 
   return (
-    <div className="flex flex-col h-full gap-6">
-      {/* Category Navigation */}
-      <Card className="border-b">
-        <CardHeader>
-          <CardTitle>Personalized Coping Strategies</CardTitle>
-        </CardHeader>
-        <CardContent className="pb-6">
-          <ScrollArea className="w-full" orientation="horizontal">
-            <div className="flex space-x-2">
-              {Object.entries(strategies).map(([key, { icon: Icon, title }]) => (
-                <Button
-                  key={key}
-                  variant={selectedCategory === key ? "default" : "outline"}
-                  className="flex-shrink-0 flex items-center gap-2"
-                  onClick={() => setSelectedCategory(key as keyof typeof strategies)}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{title}</span>
-                </Button>
-              ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col space-y-6 p-4 max-h-[80vh]">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight mb-1">Coping Strategies</h2>
+        <p className="text-sm text-muted-foreground">Select a category to view personalized strategies</p>
+      </div>
 
-      {/* Strategies Content */}
-      <div className="space-y-6">
-        {/* Current Mood Strategies */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">
-              Recommended for Your Current Mood
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {strategies[selectedCategory].mood[currentMoodValue].map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                >
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                  <span>{item}</span>
+      <div className="grid md:grid-cols-[200px,1fr] gap-6">
+        {/* Category Navigation - Vertical */}
+        <div className="space-y-2">
+          {Object.entries(strategies).map(([key, { icon: Icon, title }]) => (
+            <Button
+              key={key}
+              variant={selectedCategory === key ? "default" : "outline"}
+              className={cn(
+                "w-full justify-start gap-2",
+                selectedCategory === key && "bg-primary text-primary-foreground"
+              )}
+              onClick={() => setSelectedCategory(key as keyof typeof strategies)}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{title}</span>
+            </Button>
+          ))}
+        </div>
+
+        {/* Strategies Content */}
+        <ScrollArea className="h-[calc(80vh-8rem)]">
+          <div className="space-y-6 pr-4">
+            {/* Current Mood Strategies */}
+            <Card className="border-primary/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {(() => {
+                    const Icon = strategies[selectedCategory].icon;
+                    return <Icon className="h-5 w-5" />;
+                  })()}
+                  Recommended for Your Current Mood
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2">
+                  {strategies[selectedCategory].mood[currentMoodValue].map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+                    >
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* All Mood Levels */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">All {strategies[selectedCategory].title} Strategies</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {moodLevels.map((moodLevel) => (
-                <div key={moodLevel} className="space-y-2">
-                  <h3 className="font-medium text-sm text-muted-foreground">
-                    {moodLevel === 1 ? "When feeling down" : 
-                     moodLevel === 2 ? "When feeling okay" : 
-                     "When feeling great"}
-                  </h3>
-                  <div className="space-y-2">
-                    {strategies[selectedCategory].mood[moodLevel].map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                        <span>{item}</span>
+            {/* All Mood Levels */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">All {strategies[selectedCategory].title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6">
+                  {moodLevels.map((moodLevel) => (
+                    <div key={moodLevel} className="space-y-3">
+                      <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                        <div className={cn(
+                          "h-2 w-2 rounded-full",
+                          moodLevel === 1 ? "bg-red-500" :
+                          moodLevel === 2 ? "bg-yellow-500" :
+                          "bg-green-500"
+                        )} />
+                        {moodLevel === 1 ? "When feeling down" : 
+                         moodLevel === 2 ? "When feeling okay" : 
+                         "When feeling great"}
+                      </h3>
+                      <div className="grid gap-2">
+                        {strategies[selectedCategory].mood[moodLevel].map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-card hover:bg-accent transition-colors"
+                          >
+                            <div className={cn(
+                              "h-2 w-2 rounded-full",
+                              moodLevel === 1 ? "bg-red-500" :
+                              moodLevel === 2 ? "bg-yellow-500" :
+                              "bg-green-500"
+                            )} />
+                            <span>{item}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </ScrollArea>
       </div>
     </div>
   );

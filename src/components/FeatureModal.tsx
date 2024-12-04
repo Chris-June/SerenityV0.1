@@ -1,14 +1,14 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFeatureModal } from '@/hooks/use-feature-modal';
-import { MoodTracker } from './MoodTracker';
-import { BreathingExercise } from './BreathingExercise';
-import { CopingStrategies } from './CopingStrategies';
-import { HabitTracker } from './HabitTracker';
-import { AffirmationCard } from './AffirmationCard';
-import { SelfCareReminders } from './SelfCareReminders';
-import { SleepTracker } from './SleepTracker';
-import { EmergencyResources } from './EmergencyResources';
+import { MoodTracker } from '@/components/MoodTracker';
+import { BreathingExercise } from '@/components/BreathingExercise';
+import { CopingStrategies } from '@/components/CopingStrategies';
+import { HabitTracker } from '@/components/HabitTracker';
+import { AffirmationCard } from '@/components/AffirmationCard';
+import { SelfCareReminders } from '@/components/SelfCareReminders';
+import { SleepTracker } from '@/components/SleepTracker';
+import { EmergencyResources } from '@/components/EmergencyResources';
 
 const featureComponents: Record<string, {
   component: React.ComponentType;
@@ -35,7 +35,7 @@ const featureComponents: Record<string, {
     component: AffirmationCard,
     title: 'Daily Affirmations',
   },
-  reminders: {
+  selfcare: {
     component: SelfCareReminders,
     title: 'Self-Care Reminders',
   },
@@ -53,23 +53,30 @@ const featureComponents: Record<string, {
 export function FeatureModal() {
   const { isOpen, feature, closeModal } = useFeatureModal();
   const featureData = feature ? featureComponents[feature] : null;
-  const FeatureComponent = featureData?.component;
+  const Component = featureData?.component;
+  const title = featureData?.title || '';
+  const isScrollable = featureData?.scrollable || false;
+
+  if (!Component) return null;
+
+  const content = isScrollable ? (
+    <ScrollArea className="h-[80vh]">
+      <Component />
+    </ScrollArea>
+  ) : (
+    <Component />
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={closeModal}>
-      <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="shrink-0">
-          <DialogTitle>{featureData?.title}</DialogTitle>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            Access and manage your {title.toLowerCase()} settings and activities.
+          </DialogDescription>
         </DialogHeader>
-        {FeatureComponent && (
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full w-full">
-              <div className="p-1">
-                <FeatureComponent />
-              </div>
-            </ScrollArea>
-          </div>
-        )}
+        {content}
       </DialogContent>
     </Dialog>
   );

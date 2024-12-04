@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Quote, RefreshCw, Heart, Share2 } from 'lucide-react';
+import { Quote, RefreshCw, Heart, Share2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 const affirmations = [
   {
@@ -75,19 +76,65 @@ export function AffirmationCard() {
   const [currentAffirmation, setCurrentAffirmation] = useState('');
   const [isLiked, setIsLiked] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [userMood, setUserMood] = useState(2); // Default to neutral mood
+  const [likedAffirmations, setLikedAffirmations] = useLocalStorage<string[]>('liked-affirmations', []);
+  const [lastSeenAffirmations, setLastSeenAffirmations] = useLocalStorage<string[]>('last-seen-affirmations', []);
 
   const getRandomAffirmation = () => {
-    const randomIndex = Math.floor(Math.random() * affirmations.length);
-    return affirmations[randomIndex].text;
+    let availableAffirmations;
+    
+    // First try mood-based affirmations
+    if (userMood && moodBasedAffirmations[userMood as keyof typeof moodBasedAffirmations]) {
+      availableAffirmations = moodBasedAffirmations[userMood as keyof typeof moodBasedAffirmations];
+    } else {
+      // Fall back to regular affirmations
+      availableAffirmations = affirmations.map(a => a.text);
+    }
+
+    // Filter out recently seen affirmations
+    const unseenAffirmations = availableAffirmations.filter(
+      affirmation => !lastSeenAffirmations.includes(affirmation)
+    );
+
+    // If all affirmations have been seen, reset the history
+    if (unseenAffirmations.length === 0) {
+      setLastSeenAffirmations([]);
+      return availableAffirmations[Math.floor(Math.random() * availableAffirmations.length)];
+    }
+
+    const newAffirmation = unseenAffirmations[Math.floor(Math.random() * unseenAffirmations.length)];
+    
+    // Update last seen affirmations
+    setLastSeenAffirmations(prev => {
+      const updated = [...prev, newAffirmation];
+      return updated.slice(-5); // Keep only last 5 affirmations
+    });
+
+    return newAffirmation;
   };
 
   const refreshAffirmation = () => {
     setIsAnimating(true);
     setTimeout(() => {
-      setCurrentAffirmation(getRandomAffirmation());
-      setIsLiked(false);
+      const newAffirmation = getRandomAffirmation();
+      setCurrentAffirmation(newAffirmation);
+      setIsLiked(likedAffirmations.includes(newAffirmation));
       setIsAnimating(false);
     }, 300);
+  };
+
+  const toggleLike = () => {
+    setIsLiked(!isLiked);
+    if (!isLiked) {
+      setLikedAffirmations(prev => [...prev, currentAffirmation]);
+    } else {
+      setLikedAffirmations(prev => prev.filter(a => a !== currentAffirmation));
+    }
+  };
+
+  const updateMood = (mood: number) => {
+    setUserMood(mood);
+    refreshAffirmation();
   };
 
   const shareAffirmation = async () => {
@@ -111,9 +158,29 @@ export function AffirmationCard() {
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
       
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Quote className="h-5 w-5 text-primary" />
-          Daily Affirmation
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Quote className="h-5 w-5 text-primary" />
+            Daily Affirmation
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => updateMood(1)}
+              className={cn(userMood === 1 && "text-primary")}
+            >
+              <ThumbsDown className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => updateMood(3)}
+              className={cn(userMood === 3 && "text-primary")}
+            >
+              <ThumbsUp className="h-4 w-4" />
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       
@@ -132,7 +199,7 @@ export function AffirmationCard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsLiked(!isLiked)}
+              onClick={toggleLike}
               className={cn(
                 "transition-colors",
                 isLiked && "text-red-500 hover:text-red-600"

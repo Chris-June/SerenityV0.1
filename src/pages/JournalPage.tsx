@@ -8,7 +8,7 @@ import {
   Upload, Trash2, Edit2, Tag, Hash, Activity 
 } from 'lucide-react';
 import { format, subDays, isAfter } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from "@/components/ui/label";
 import { useJournalStorage, JournalEntry, DEFAULT_CATEGORIES, NewJournalEntry } from '@/hooks/use-journal-storage';
 import { useToast } from "@/components/ui/use-toast";
@@ -310,6 +310,9 @@ export function JournalPage() {
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>{editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}</DialogTitle>
+                  <DialogDescription>
+                    {editingEntry ? 'Edit your existing journal entry below.' : 'Create a new journal entry to document your thoughts and feelings.'}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 pt-4">
                   <div className="space-y-2">
