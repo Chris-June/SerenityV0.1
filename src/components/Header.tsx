@@ -12,13 +12,13 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 
 const features = [
-  { id: 'mood', label: 'Mood Tracker', icon: Heart },
-  { id: 'breathing', label: 'Breathing Exercise', icon: Sparkles },
-  { id: 'coping', label: 'Coping Strategies', icon: BookOpen },
-  { id: 'chat', label: 'AI Chat', icon: MessageCircle },
-  { id: 'affirmations', label: 'Affirmation Cards', icon: Sun },
-  { id: 'selfcare', label: 'Self-Care Reminders', icon: Bell },
-  { id: 'sleep', label: 'Sleep Tracker', icon: BedDouble },
+  { id: 'mood', label: 'Mood Tracker', icon: Heart, path: '/mood' },
+  { id: 'breathing', label: 'Breathing Exercise', icon: Sparkles, path: '/breathing' },
+  { id: 'coping', label: 'Coping Strategies', icon: BookOpen, path: '/coping' },
+  { id: 'chat', label: 'AI Chat', icon: MessageCircle, path: '/chat' },
+  { id: 'affirmations', label: 'Affirmation Cards', icon: Sun, path: '/wellness?tab=affirmations' },
+  { id: 'selfcare', label: 'Self-Care Reminders', icon: Bell, path: '/wellness?tab=selfcare' },
+  { id: 'sleep', label: 'Sleep Tracker', icon: BedDouble, path: '/wellness?tab=sleep' },
 ];
 
 const navLinks = [
@@ -90,7 +90,7 @@ export function Header() {
                 return (
                   <DropdownMenuItem
                     key={feature.id}
-                    onClick={() => openModal(feature.id)}
+                    onClick={() => feature.path ? navigate(feature.path) : openModal(feature.id)}
                     className="flex items-center space-x-2 hover:bg-[#2a2a2a] hover:text-primary transition-colors focus:bg-[#2a2a2a] focus:text-primary"
                   >
                     <Icon className="h-4 w-4" />

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { AffirmationDetail } from './AffirmationDetail';
 
 const affirmations = [
   {
@@ -77,6 +78,7 @@ export function AffirmationCard() {
   const [isLiked, setIsLiked] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [userMood, setUserMood] = useState(2); // Default to neutral mood
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [likedAffirmations, setLikedAffirmations] = useLocalStorage<string[]>('liked-affirmations', []);
   const [lastSeenAffirmations, setLastSeenAffirmations] = useLocalStorage<string[]>('last-seen-affirmations', []);
 
@@ -188,9 +190,10 @@ export function AffirmationCard() {
         <div className="space-y-4">
           <div
             className={cn(
-              "min-h-[80px] flex items-center justify-center text-center p-4 rounded-lg bg-muted/50 transition-opacity duration-300",
+              "min-h-[80px] flex items-center justify-center text-center p-4 rounded-lg bg-muted/50 transition-opacity duration-300 cursor-pointer hover:bg-muted",
               isAnimating && "opacity-0"
             )}
+            onClick={() => setIsDetailOpen(true)}
           >
             <p className="text-lg font-medium">{currentAffirmation}</p>
           </div>
@@ -235,6 +238,12 @@ export function AffirmationCard() {
           </div>
         </div>
       </CardContent>
+
+      <AffirmationDetail 
+        affirmation={currentAffirmation}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+      />
     </Card>
   );
 }
