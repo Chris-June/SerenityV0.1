@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 40% 98%;
+    --foreground: 220 10% 4%;
+    
+    /* Emerald Green Primary Colors */
+    --primary: 151 55% 42%;
+    --primary-foreground: 355 100% 100%;
+    
+    /* Complementary Colors */
+    --secondary: 151 30% 96%;
+    --secondary-foreground: 151 50% 20%;
+    
+    /* UI Elements */
+    --card: 0 0% 100%;
+    --card-foreground: 220 10% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 4%;
+    --muted: 151 10% 96%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 151 30% 96%;
+    --accent-foreground: 151 50% 20%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+    
+    /* Borders and Inputs */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 151 55% 42%;
+    
+    /* Charts */
+    --chart-1: 151 55% 42%;
+    --chart-2: 151 40% 60%;
+    --chart-3: 151 30% 75%;
+    --chart-4: 151 25% 85%;
+    --chart-5: 151 20% 92%;
+    
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 220 40% 4%;
+    --foreground: 220 10% 98%;
+    
+    /* Emerald Green Primary Colors - Dark Mode */
+    --primary: 151 55% 50%;
+    --primary-foreground: 355 100% 100%;
+    
+    /* Complementary Colors - Dark Mode */
+    --secondary: 151 30% 12%;
+    --secondary-foreground: 151 50% 90%;
+    
+    /* UI Elements - Dark Mode */
+    --card: 220 40% 8%;
+    --card-foreground: 220 10% 98%;
+    --popover: 220 40% 8%;
+    --popover-foreground: 220 10% 98%;
+    --muted: 151 10% 16%;
+    --muted-foreground: 220 10% 70%;
+    --accent: 151 30% 16%;
+    --accent-foreground: 151 50% 90%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 20% 98%;
+    
+    /* Borders and Inputs - Dark Mode */
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 151 55% 50%;
+    
+    /* Charts - Dark Mode */
+    --chart-1: 151 55% 50%;
+    --chart-2: 151 50% 45%;
+    --chart-3: 151 45% 40%;
+    --chart-4: 151 40% 35%;
+    --chart-5: 151 35% 30%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .bg-grid-white {
+    background-size: 40px 40px;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+  }
+}
