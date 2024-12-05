@@ -1,5 +1,5 @@
 export interface StructuredResponse {
-  type: 'empathy' | 'suggestion' | 'question' | 'resource' | 'crisis' | 'clarification';
+  type: 'empathy' | 'suggestion' | 'question' | 'resource' | 'crisis' | 'clarification' | 'safety';
   content: string;
   metadata?: {
     confidence?: number;
@@ -8,6 +8,10 @@ export interface StructuredResponse {
     tags?: string[];
     severity?: 'low' | 'medium' | 'high' | 'crisis';
     actionItems?: string[];
+    requiresImmediate?: boolean;
+    priority?: 'low' | 'medium' | 'high';
+    displayType?: 'normal' | 'prominent' | 'subtle';
+    retryable?: boolean;
   };
 }
 
@@ -26,10 +30,23 @@ export interface AIResponse {
   };
 }
 
+export interface DocumentMetadata {
+  title?: string;
+  description?: string;
+  source?: string;
+  timestamp?: string;
+  category?: string;
+  tags?: string[];
+  actionItems?: string[];
+  priority?: 'low' | 'medium' | 'high';
+  status?: 'active' | 'archived' | 'draft';
+  lastModified?: string;
+}
+
 export interface Document {
   id: string;
   content: string;
   embedding: number[];
-  metadata: Record<string, any>;
+  metadata: DocumentMetadata;
   similarity?: number;
 }

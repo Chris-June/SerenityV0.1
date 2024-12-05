@@ -26,14 +26,10 @@ export async function generateAIResponse(messages: Message[]): Promise<AIRespons
     // Get relevant resources
     const relevantResources = await searchSimilar(lastMessage.content, 3);
 
-    // Generate structured response using environment variables
-    const modelConfig = {
-      model: import.meta.env.VITE_OPENAI_MODEL || "gpt-4-0-mini",
-      temperature: Number(import.meta.env.VITE_OPENAI_TEMPERATURE) || 0.7,
-      maxTokens: Number(import.meta.env.VITE_OPENAI_MAX_TOKENS) || 200,
-      frequencyPenalty: Number(import.meta.env.VITE_OPENAI_FREQUENCY_PENALTY) || 0,
-      presencePenalty: Number(import.meta.env.VITE_OPENAI_PRESENCE_PENALTY) || 0
-    };
+    // Use proper config management
+    const modelConfig = getModelConfig();
+    const temperature = getTemperature();
+    modelConfig.temperature = temperature; // Override with dynamic temperature
 
     const structuredMessages = await generateStructuredMessages(
       messages,
@@ -47,7 +43,7 @@ export async function generateAIResponse(messages: Message[]): Promise<AIRespons
       context: {
         mood: conversationInsights.mood.current,
         intensity: conversationInsights.mood.intensity,
-        topics: conversationInsights.topics,
+        topics: conversationInsights.topics.map(topic => topic.name),
         relevantResources: relevantResources.map(r => r.content),
       },
       suggestedActions: await generateSuggestedActions(
@@ -67,13 +63,32 @@ async function generateStructuredMessages(
   resources: Awaited<ReturnType<typeof searchSimilar>>,
   modelConfig: {
     model: string;
-    temperature: number;
     maxTokens: number;
-    frequencyPenalty: number;
-    presencePenalty: number;
+    contextWindow: number;
+    temperature: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
   }
 ): Promise<StructuredResponse[]> {
   const structuredMessages: StructuredResponse[] = [];
+  const systemPrompt = getSystemPrompt(); // Get system prompt for consistency
+
+  // Use modelConfig parameters
+  console.log(`Generating structured messages using model: ${modelConfig.model}`);
+  console.log(`Max tokens: ${modelConfig.maxTokens}, Temperature: ${modelConfig.temperature}`);
+
+  // Add system context if it's a new conversation
+  if (messages.length === 1) {
+    structuredMessages.push({
+      type: "clarification",
+      content: systemPrompt,
+      metadata: {
+        confidence: 1.0,
+        sources: ["system_prompt"],
+        tags: [aiConfig.roles.therapist]
+      },
+    });
+  }
 
   // Add empathetic acknowledgment
   structuredMessages.push({
@@ -81,8 +96,9 @@ async function generateStructuredMessages(
     content: generateEmpathyResponse(insights),
     metadata: {
       confidence: 0.9,
-      mood: insights.mood.current,
-      intensity: insights.mood.intensity,
+      tags: [`mood:${insights.mood.current}`, `intensity:${insights.mood.intensity}`],
+      severity: insights.mood.intensity > 0.7 ? 'high' : 
+               insights.mood.intensity > 0.4 ? 'medium' : 'low'
     },
   });
 
@@ -93,7 +109,7 @@ async function generateStructuredMessages(
       content: resources[0].content,
       metadata: {
         confidence: 0.8,
-        source: resources[0].metadata?.source,
+        sources: [resources[0].metadata?.source],
         tags: resources[0].metadata?.topic as string[],
       },
     });
@@ -106,8 +122,8 @@ async function generateStructuredMessages(
       content: generateFollowUpQuestion(insights),
       metadata: {
         confidence: 0.7,
-        topics: insights.topics,
-        followUp: generateFollowUpQuestions(insights),
+        tags: insights.topics.map(topic => topic.name),
+        followUp: generateFollowUpQuestions(insights)
       },
     });
   }
@@ -155,7 +171,7 @@ function generateFollowUpQuestion(insights: Awaited<ReturnType<typeof analyzeCon
   }
   
   if (topics.length > 0) {
-    return `Would you like to explore more about ${topics[0]}?`;
+    return `Would you like to explore more about ${topics[0].name}?`;
   }
   
   return "How else can I support you today?";
@@ -165,12 +181,12 @@ function generateFollowUpQuestions(insights: Awaited<ReturnType<typeof analyzeCo
   const questions: string[] = [];
   const { topics, concerns, progress } = insights;
 
-  if (topics.includes("anxiety")) {
+  if (topics.some(topic => topic.name === "anxiety")) {
     questions.push("What triggers your anxiety the most?");
     questions.push("Have you tried any relaxation techniques?");
   }
 
-  if (topics.includes("depression")) {
+  if (topics.some(topic => topic.name === "depression")) {
     questions.push("What activities usually help lift your mood?");
     questions.push("Would you like to explore some coping strategies?");
   }
@@ -190,7 +206,7 @@ function generateFollowUpQuestions(insights: Awaited<ReturnType<typeof analyzeCo
 async function generateSuggestedActions(
   insights: Awaited<ReturnType<typeof analyzeConversation>>,
   resources: Awaited<ReturnType<typeof searchSimilar>>
-) {
+): Promise<{ immediate: string[], shortTerm: string[] }> {
   const actions = {
     immediate: [] as string[],
     shortTerm: [] as string[],
@@ -219,33 +235,46 @@ async function generateSuggestedActions(
 }
 
 function generateCrisisResponse(insights: Awaited<ReturnType<typeof analyzeConversation>>): AIResponse {
+  // Get the first topic from insights or use 'crisis' as default
+  const topic = insights.topics?.[0]?.name || 'crisis';
+  const safetyMessage = getSafetyDisclaimer(topic) || "Please seek professional help for immediate assistance with this issue.";
+  const crisisResponse = getCrisisResponse();
+  
   return {
     messages: [
       {
         type: "crisis",
-        content: getCrisisResponse(),
+        content: crisisResponse,
         metadata: {
           severity: "high",
-          immediate: true,
-          requiresAction: true,
+          requiresImmediate: true,
+        },
+      },
+      {
+        type: "safety",
+        content: safetyMessage,
+        metadata: {
+          priority: "high",
+          displayType: "prominent",
         },
       },
     ],
     context: {
       mood: insights.mood.current,
       intensity: insights.mood.intensity,
-      topics: ["crisis", ...insights.topics],
+      topics: ["crisis", ...insights.topics.map(topic => topic.name)],
+      relevantResources: [],
     },
     suggestedActions: {
       immediate: [
         "Contact emergency services if in immediate danger",
-        "Call the National Crisis Hotline: 988",
-        "Reach out to a trusted person for support",
+        "Reach out to a mental health professional",
+        "Contact a trusted friend or family member",
       ],
       shortTerm: [
-        "Schedule an appointment with a mental health professional",
-        "Create a safety plan with professional help",
-        "Join a support group or community",
+        "Schedule an appointment with a counselor",
+        "Practice grounding techniques",
+        "Use crisis helpline resources",
       ],
     },
   };

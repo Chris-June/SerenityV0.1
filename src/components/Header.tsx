@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 
 const features = [
-  { id: 'mood', label: 'Mood Tracker', icon: Heart, path: '/mood' },
+  { id: 'mood', label: 'Mood Tracker', icon: Heart },
   { id: 'breathing', label: 'Breathing Exercise', icon: Sparkles, path: '/exercises/breathing' },
   { id: 'coping', label: 'Coping Strategies', icon: BookOpen, path: '/resources/coping' },
   { id: 'chat', label: 'AI Chat', icon: MessageCircle, path: '/chat' },

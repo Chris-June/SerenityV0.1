@@ -215,6 +215,7 @@ export function getModelConfig(useDefault = true) {
     model: useDefault ? aiConfig.model.default : aiConfig.model.fallback,
     maxTokens: aiConfig.model.maxResponseTokens,
     contextWindow: aiConfig.model.contextWindow,
+    temperature: getTemperature(), // Add temperature here
   };
 }
 

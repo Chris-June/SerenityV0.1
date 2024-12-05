@@ -21,7 +21,7 @@ interface ConversationInsights {
     trend: "improving" | "declining" | "stable";
     intensity: number;
   };
-  topics: string[];
+  topics: TopicAnalysis[];
   concerns: string[];
   progress: {
     insights: string[];
@@ -33,6 +33,7 @@ interface ConversationInsights {
     responseQuality: number; // 0-1
     followUpRate: number; // 0-1
   };
+  current: string;
 }
 
 interface TopicAnalysis {
@@ -44,50 +45,60 @@ interface TopicAnalysis {
 }
 
 export async function analyzeConversation(messages: Message[]): Promise<ConversationInsights> {
-  console.log(' Starting conversation analysis', { messageCount: messages.length });
-  const recentMessages = messages.slice(-10); // Focus on recent context
-  const userMessages = recentMessages.filter(m => m.sender === "user");
-  const companionMessages = recentMessages.filter(m => m.sender === "companion");
-
+  // Use OpenAI for advanced text analysis
+  const conversationText = messages.map(m => m.content).join(' ');
+  
   try {
-    // Analyze mood and intensity
-    console.log(' Analyzing mood and sentiment');
-    const moodAnalysis = analyzeMood(userMessages);
-    console.log(' Mood analysis complete:', moodAnalysis);
-
-    console.log(' Analyzing conversation topics');
-    const topicsFound = await analyzeTopics(userMessages);
-    console.log(' Topics identified:', topicsFound);
-
-    console.log(' Identifying potential concerns');
-    const concernsIdentified = identifyConcerns(userMessages);
+    // Get relevant context from knowledge base
+    const lastMessage = messages[messages.length - 1];
+    const relevantContext = await searchSimilar(lastMessage.content, 3);
     
-    console.log(' Tracking conversation progress');
-    const progressTracking = trackProgress(recentMessages);
+    // Combine conversation text with relevant context for better analysis
+    const contextEnhancedText = `${conversationText}\n\nRelevant Context:\n${relevantContext.map(doc => doc.content).join('\n')}`;
     
-    console.log(' Calculating engagement metrics');
-    const engagementMetrics = calculateEngagement(recentMessages);
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system", 
+          content: "Analyze the following conversation and provide insights about mood, topics, and engagement."
+        },
+        {
+          role: "user", 
+          content: contextEnhancedText
+        }
+      ],
+      max_tokens: 300
+    });
 
-    const insights = {
-      mood: moodAnalysis,
-      topics: topicsFound,
-      concerns: concernsIdentified,
-      progress: progressTracking,
-      engagement: engagementMetrics,
+    const aiInsights = completion.choices[0].message.content || '';
+
+    return {
+      mood: analyzeMood(messages),
+      topics: await analyzeTopics(messages),
+      concerns: identifyConcerns(messages),
+      progress: trackProgress(messages),
+      engagement: calculateEngagement(messages),
+      current: aiInsights
     };
-
-    console.log(' Conversation analysis complete', { insights });
-    return insights;
   } catch (error) {
-    console.error(' Error in conversation analysis:', error);
-    throw error;
+    console.error('Error analyzing conversation with OpenAI:', error);
+    // Fallback to existing analysis methods if OpenAI fails
+    return {
+      mood: analyzeMood(messages),
+      topics: await analyzeTopics(messages),
+      concerns: identifyConcerns(messages),
+      progress: trackProgress(messages),
+      engagement: calculateEngagement(messages),
+      current: 'Unable to generate AI insights'
+    };
   }
 }
 
 function analyzeMood(messages: Message[]): ConversationInsights["mood"] {
   let currentMood = "neutral";
   let intensity = 0;
-  let moodScores: number[] = [];
+  const moodScores: number[] = [];
 
   messages.forEach(msg => {
     const words = msg.content.toLowerCase().split(/\s+/);
@@ -115,27 +126,34 @@ function analyzeMood(messages: Message[]): ConversationInsights["mood"] {
   };
 }
 
-async function analyzeTopics(messages: Message[]): Promise<string[]> {
-  const text = messages.map(m => m.content).join(" ");
-  const words = text.toLowerCase().split(/\s+/);
-  const topics = new Set<string>();
+async function analyzeTopics(messages: Message[]): Promise<TopicAnalysis[]> {
+  const conversationText = messages.map(m => m.content).join(' ');
+  
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "Analyze the conversation and extract key topics with their frequency, sentiment, and related resources."
+        },
+        {
+          role: "user",
+          content: conversationText
+        }
+      ]
+    });
 
-  // Check predefined topics
-  aiConfig.contextTracking.topicCategories.forEach(topic => {
-    if (words.some(w => w.includes(topic.toLowerCase()))) {
-      topics.add(topic);
-    }
-  });
-
-  // Get relevant resources
-  const relevantDocs = await searchSimilar(text, 3);
-  relevantDocs.forEach(doc => {
-    if (doc.metadata?.topic) {
-      (doc.metadata.topic as string[]).forEach(t => topics.add(t));
-    }
-  });
-
-  return Array.from(topics);
+    const topicAnalysisText = response.choices[0].message.content || '';
+    
+    // Parse the response into TopicAnalysis array
+    const topics: TopicAnalysis[] = JSON.parse(topicAnalysisText);
+    
+    return topics;
+  } catch (error) {
+    console.error("Error analyzing topics:", error);
+    return [];
+  }
 }
 
 function identifyConcerns(messages: Message[]): string[] {
@@ -197,7 +215,7 @@ function trackProgress(messages: Message[]): ConversationInsights["progress"] {
 
 function calculateEngagement(messages: Message[]): ConversationInsights["engagement"] {
   const userMessages = messages.filter(m => m.sender === "user");
-  const companionMessages = messages.filter(m => m.sender === "companion");
+  const companionMessages = messages.filter(m => m.sender === "ai");
 
   // Calculate user participation
   const userParticipation = userMessages.length / messages.length;
@@ -210,7 +228,7 @@ function calculateEngagement(messages: Message[]): ConversationInsights["engagem
   const followUps = messages.filter((m, i) => 
     i > 0 && 
     m.sender === "user" && 
-    messages[i-1].sender === "companion"
+    messages[i-1].sender === "ai"
   ).length;
   const followUpRate = followUps / companionMessages.length;
 

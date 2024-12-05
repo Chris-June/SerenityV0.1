@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Quote, RefreshCw, Heart, Share2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { AffirmationDetail } from './AffirmationDetail';
@@ -82,6 +83,15 @@ export function AffirmationCard() {
   const [likedAffirmations, setLikedAffirmations] = useLocalStorage<string[]>('liked-affirmations', []);
   const [lastSeenAffirmations, setLastSeenAffirmations] = useLocalStorage<string[]>('last-seen-affirmations', []);
 
+  useEffect(() => {
+    console.log('💫 AffirmationCard mounted');
+    setCurrentAffirmation(getRandomAffirmation());
+  }, []);
+
+  useEffect(() => {
+    console.log('🔓 Detail modal state changed:', isDetailOpen);
+  }, [isDetailOpen]);
+
   const getRandomAffirmation = () => {
     let availableAffirmations;
     
@@ -113,6 +123,12 @@ export function AffirmationCard() {
     });
 
     return newAffirmation;
+  };
+
+  const handleAffirmationClick = () => {
+    console.log('🎯 Affirmation clicked');
+    console.log('Current affirmation:', currentAffirmation);
+    setIsDetailOpen(true);
   };
 
   const refreshAffirmation = () => {
@@ -151,10 +167,6 @@ export function AffirmationCard() {
     }
   };
 
-  useEffect(() => {
-    setCurrentAffirmation(getRandomAffirmation());
-  }, []);
-
   return (
     <Card className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
@@ -188,14 +200,26 @@ export function AffirmationCard() {
       
       <CardContent>
         <div className="space-y-4">
-          <div
-            className={cn(
-              "min-h-[80px] flex items-center justify-center text-center p-4 rounded-lg bg-muted/50 transition-opacity duration-300 cursor-pointer hover:bg-muted",
-              isAnimating && "opacity-0"
-            )}
-            onClick={() => setIsDetailOpen(true)}
-          >
-            <p className="text-lg font-medium">{currentAffirmation}</p>
+          <div className={cn(
+            "relative min-h-[80px] flex flex-col items-center justify-center text-center p-4 rounded-lg bg-muted/50 transition-opacity duration-300",
+            isAnimating && "opacity-0"
+          )}>
+            <Badge 
+              variant="secondary" 
+              className="absolute top-2 right-2 cursor-pointer hover:bg-secondary"
+              onClick={handleAffirmationClick}
+            >
+              Expand ✨
+            </Badge>
+            <p className="text-lg font-medium mb-2">{currentAffirmation}</p>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="mt-2"
+              onClick={handleAffirmationClick}
+            >
+              View Details
+            </Button>
           </div>
           
           <div className="flex items-center justify-between">
@@ -242,7 +266,10 @@ export function AffirmationCard() {
       <AffirmationDetail 
         affirmation={currentAffirmation}
         isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
+        onClose={() => {
+          console.log('🔒 Closing detail modal');
+          setIsDetailOpen(false);
+        }}
       />
     </Card>
   );
