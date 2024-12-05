@@ -15,16 +15,21 @@ export function useAffirmationAI(): UseAffirmationAIReturn {
 
   const generateExpansion = async (affirmation: string) => {
     try {
+      console.log('🎬 Starting affirmation expansion in hook');
       setIsLoading(true);
       setError(null);
 
       const content = await generateAffirmationExpansion(affirmation);
+      console.log('✅ Successfully generated affirmation expansion');
       setExpandedContent(content);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      console.error('❌ Error in useAffirmationAI hook:', errorMessage);
+      setError(errorMessage);
       setExpandedContent(null);
     } finally {
       setIsLoading(false);
+      console.log('🏁 Completed affirmation expansion process');
     }
   };
 

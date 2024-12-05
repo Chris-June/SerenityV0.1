@@ -16,9 +16,19 @@ export function AffirmationDetail({ affirmation, isOpen, onClose }: AffirmationD
 
   useEffect(() => {
     if (isOpen && affirmation) {
+      console.log('🎯 Generating expansion for affirmation:', affirmation);
       generateExpansion(affirmation);
     }
   }, [isOpen, affirmation]);
+
+  useEffect(() => {
+    if (error) {
+      console.error('🔴 Error in AffirmationDetail:', error);
+    }
+    if (expandedContent) {
+      console.log('✨ Received expanded content');
+    }
+  }, [error, expandedContent]);
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose()}>

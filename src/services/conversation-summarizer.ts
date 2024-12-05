@@ -1,6 +1,19 @@
 import { Message } from "@/types";
 import { analyzeSentiment, getSentimentSummary } from "./sentiment-analyzer";
 import { aiConfig } from "@/config/ai-config";
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
+if (!import.meta.env.VITE_OPENAI_API_KEY) {
+  console.error(' OpenAI API Key is missing in conversation summarizer');
+  throw new Error('VITE_OPENAI_API_KEY is not set in environment variables');
+} else {
+  console.log(' OpenAI API Key is configured in conversation summarizer');
+}
 
 interface ConversationSummary {
   overview: string;
@@ -36,23 +49,41 @@ interface SegmentAnalysis {
 }
 
 export function summarizeConversation(messages: Message[]): ConversationSummary {
+  console.log(' Starting conversation summarization', { messageCount: messages.length });
+  
   if (messages.length === 0) {
+    console.log(' No messages to summarize, returning empty summary');
     return createEmptySummary();
   }
 
-  const segments = analyzeSegments(messages);
-  const topics = analyzeTopics(segments);
-  const insights = generateInsights(segments, topics);
-  const metrics = calculateMetrics(messages);
+  try {
+    console.log(' Analyzing conversation segments');
+    const segments = analyzeSegments(messages);
+    
+    console.log(' Analyzing conversation topics');
+    const topics = analyzeTopics(segments);
+    
+    console.log(' Generating conversation insights');
+    const insights = generateInsights(segments, topics);
+    
+    console.log(' Calculating conversation metrics');
+    const metrics = calculateMetrics(messages);
 
-  return {
-    overview: generateOverview(segments, topics),
-    keyPoints: extractKeyPoints(segments),
-    emotionalJourney: trackEmotionalJourney(segments),
-    topics,
-    insights,
-    metrics,
-  };
+    const summary = {
+      overview: generateOverview(segments, topics),
+      keyPoints: extractKeyPoints(segments),
+      emotionalJourney: trackEmotionalJourney(segments),
+      topics,
+      insights,
+      metrics,
+    };
+
+    console.log(' Conversation summary complete', { summary });
+    return summary;
+  } catch (error) {
+    console.error(' Error in conversation summarization:', error);
+    throw error;
+  }
 }
 
 function analyzeSegments(messages: Message[]): SegmentAnalysis[] {

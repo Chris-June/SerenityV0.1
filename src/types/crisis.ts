@@ -7,6 +7,7 @@ export interface CrisisAssessment {
   urgency: boolean;
   requiresProfessional: boolean;
   safetyPlan?: SafetyPlan;
+  timestamp: string;
 }
 
 export interface SafetyPlan {

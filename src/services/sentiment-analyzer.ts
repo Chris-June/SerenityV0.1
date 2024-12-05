@@ -1,5 +1,18 @@
 import { Message } from "@/types";
 import { aiConfig } from "@/config/ai-config";
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
+if (!import.meta.env.VITE_OPENAI_API_KEY) {
+  console.error(' OpenAI API Key is missing in sentiment analyzer');
+  throw new Error('VITE_OPENAI_API_KEY is not set in environment variables');
+} else {
+  console.log(' OpenAI API Key is configured in sentiment analyzer');
+}
 
 interface SentimentAnalysis {
   score: number; // -1 to 1
@@ -84,68 +97,78 @@ const languageIndicators = {
   },
 };
 
-export function analyzeSentiment(text: string): SentimentAnalysis {
-  const words = text.toLowerCase().split(/\s+/);
-  const analysis: SentimentAnalysis = {
-    score: 0,
-    magnitude: 0,
-    emotions: {
-      joy: 0,
-      sadness: 0,
-      anger: 0,
-      fear: 0,
-      surprise: 0,
-      love: 0,
-    },
-    topics: [],
-    language: {
-      formality: 0.5,
-      certainty: 0.5,
-      urgency: 0.5,
-    },
-  };
+export async function analyzeSentiment(text: string): Promise<SentimentAnalysis> {
+  try {
+    console.log(' Starting sentiment analysis for text');
+    console.log(' Using model:', import.meta.env.VITE_OPENAI_MODEL || "gpt-3.5-turbo");
 
-  // Analyze emotions
-  let totalEmotionScore = 0;
-  Object.entries(emotionKeywords).forEach(([emotion, keywords]) => {
-    keywords.forEach(({ word, weight }) => {
-      const count = words.filter(w => w === word || w.includes(word)).length;
-      if (count > 0) {
-        analysis.emotions[emotion as keyof typeof analysis.emotions] += weight * count;
-        totalEmotionScore += weight * count;
-      }
+    const words = text.toLowerCase().split(/\s+/);
+    const analysis: SentimentAnalysis = {
+      score: 0,
+      magnitude: 0,
+      emotions: {
+        joy: 0,
+        sadness: 0,
+        anger: 0,
+        fear: 0,
+        surprise: 0,
+        love: 0,
+      },
+      topics: [],
+      language: {
+        formality: 0.5,
+        certainty: 0.5,
+        urgency: 0.5,
+      },
+    };
+
+    // Analyze emotions
+    let totalEmotionScore = 0;
+    Object.entries(emotionKeywords).forEach(([emotion, keywords]) => {
+      keywords.forEach(({ word, weight }) => {
+        const count = words.filter(w => w === word || w.includes(word)).length;
+        if (count > 0) {
+          analysis.emotions[emotion as keyof typeof analysis.emotions] += weight * count;
+          totalEmotionScore += weight * count;
+        }
+      });
     });
-  });
 
-  // Normalize emotions
-  if (totalEmotionScore > 0) {
-    Object.keys(analysis.emotions).forEach(emotion => {
-      analysis.emotions[emotion as keyof typeof analysis.emotions] /= totalEmotionScore;
-    });
-  }
-
-  // Calculate overall sentiment score
-  analysis.score = 
-    (analysis.emotions.joy + analysis.emotions.love) -
-    (analysis.emotions.sadness + analysis.emotions.anger + analysis.emotions.fear);
-  analysis.magnitude = Math.abs(analysis.score);
-
-  // Analyze topics
-  aiConfig.contextTracking.topicCategories.forEach(topic => {
-    const topicWords = words.filter(w => w.includes(topic.toLowerCase()));
-    if (topicWords.length > 0) {
-      analysis.topics.push({
-        name: topic,
-        sentiment: calculateTopicSentiment(topicWords, text),
-        confidence: Math.min(topicWords.length / words.length * 3, 1),
+    // Normalize emotions
+    if (totalEmotionScore > 0) {
+      Object.keys(analysis.emotions).forEach(emotion => {
+        analysis.emotions[emotion as keyof typeof analysis.emotions] /= totalEmotionScore;
       });
     }
-  });
 
-  // Analyze language style
-  analysis.language = analyzeLinguisticStyle(words);
+    // Calculate overall sentiment score
+    analysis.score = 
+      (analysis.emotions.joy + analysis.emotions.love) -
+      (analysis.emotions.sadness + analysis.emotions.anger + analysis.emotions.fear);
+    analysis.magnitude = Math.abs(analysis.score);
 
-  return analysis;
+    // Analyze topics
+    aiConfig.contextTracking.topicCategories.forEach(topic => {
+      const topicWords = words.filter(w => w.includes(topic.toLowerCase()));
+      if (topicWords.length > 0) {
+        analysis.topics.push({
+          name: topic,
+          sentiment: calculateTopicSentiment(topicWords, text),
+          confidence: Math.min(topicWords.length / words.length * 3, 1),
+        });
+      }
+    });
+
+    // Analyze language style
+    analysis.language = analyzeLinguisticStyle(words);
+
+    console.log(' Sentiment analysis complete:', analysis);
+    
+    return analysis;
+  } catch (error) {
+    console.error(' Error in sentiment analysis:', error);
+    throw new Error('Failed to analyze sentiment');
+  }
 }
 
 function calculateTopicSentiment(topicWords: string[], context: string): number {

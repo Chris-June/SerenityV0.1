@@ -8,14 +8,23 @@ import OpenAI from 'openai';
 // 4. Use environment variables securely stored in the backend
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
 });
+
+if (!import.meta.env.VITE_OPENAI_API_KEY) {
+  console.error('🔴 OpenAI API Key is missing in affirmation route');
+  throw new Error('VITE_OPENAI_API_KEY is not set in environment variables');
+} else {
+  console.log('🟢 OpenAI API Key is configured in affirmation route');
+}
 
 export async function POST(req: Request) {
   try {
+    console.log('📥 Received affirmation request');
     const { affirmation } = await req.json();
 
     if (!affirmation) {
+      console.warn('⚠️ No affirmation provided in request');
       return new Response(JSON.stringify({ error: 'Affirmation is required' }), {
         status: 400,
         headers: {
@@ -24,15 +33,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const prompt = `Given the affirmation: "${affirmation}"
-
-Create a personalized, empathetic, and encouraging expansion of this affirmation. The response should:
-1. Acknowledge the deeper meaning behind the affirmation
-2. Connect it to real-life experiences and emotions
-3. Offer gentle encouragement and validation
-4. Be written in a warm, conversational tone
-5. Be around 3-4 sentences long
-
+    console.log('📤 Processing affirmation:', affirmation);
+    const prompt = `Take this affirmation and expand upon it, making it more personal and impactful: "${affirmation}".
 The response should feel like a supportive friend offering wisdom and understanding.`;
 
     const completion = await openai.chat.completions.create({
@@ -46,14 +48,15 @@ The response should feel like a supportive friend offering wisdom and understand
           content: prompt
         }
       ],
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      max_tokens: 200,
-      frequency_penalty: 0,
-      presence_penalty: 0
+      model: import.meta.env.VITE_OPENAI_MODEL || "gpt-4-0-mini",
+      temperature: Number(import.meta.env.VITE_OPENAI_TEMPERATURE) || 0.7,
+      max_tokens: Number(import.meta.env.VITE_OPENAI_MAX_TOKENS) || 200,
+      frequency_penalty: Number(import.meta.env.VITE_OPENAI_FREQUENCY_PENALTY) || 0,
+      presence_penalty: Number(import.meta.env.VITE_OPENAI_PRESENCE_PENALTY) || 0
     });
 
     const expandedContent = completion.choices[0].message.content;
+    console.log('📥 Received OpenAI response for affirmation');
 
     return new Response(JSON.stringify({ content: expandedContent }), {
       status: 200,
@@ -62,7 +65,7 @@ The response should feel like a supportive friend offering wisdom and understand
       },
     });
   } catch (error) {
-    console.error('Error in affirmation expansion:', error);
+    console.error('🔴 Error in affirmation route:', error);
     return new Response(JSON.stringify({ error: 'Failed to generate affirmation expansion' }), {
       status: 500,
       headers: {

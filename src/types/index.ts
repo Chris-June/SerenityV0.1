@@ -29,7 +29,16 @@ export interface SentimentAnalysis {
     fear: number;
     surprise: number;
   };
-  topics: string[];
+  topics: {
+    name: string;
+    sentiment: number;
+    confidence: number;
+  }[];
+  language?: {
+    formality: number;
+    certainty: number;
+    urgency: number;
+  };
 }
 
 export interface Resource {

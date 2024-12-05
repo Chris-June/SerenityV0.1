@@ -1,34 +1,18 @@
-import { Message } from "@/types";
+import { Message, SentimentAnalysis, CrisisAssessment, SafetyPlan } from "@/types";
 import { analyzeSentiment } from "./sentiment-analyzer";
 import { summarizeConversation } from "./conversation-summarizer";
+import OpenAI from 'openai';
 
-interface CrisisAssessment {
-  severity: "none" | "low" | "medium" | "high" | "severe";
-  confidence: number;
-  triggers: string[];
-  riskFactors: string[];
-  recommendedActions: string[];
-  urgency: boolean;
-  requiresProfessional: boolean;
-  safetyPlan?: SafetyPlan;
-}
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
 
-interface SafetyPlan {
-  warningSignals: string[];
-  copingStrategies: string[];
-  supportContacts: {
-    name: string;
-    relationship: string;
-    contact: string;
-  }[];
-  professionalResources: {
-    name: string;
-    type: string;
-    contact: string;
-    hours: string;
-  }[];
-  safeEnvironment: string[];
-  reasonsToLive: string[];
+if (!import.meta.env.VITE_OPENAI_API_KEY) {
+  console.error('🔴 OpenAI API Key is missing in crisis detector');
+  throw new Error('VITE_OPENAI_API_KEY is not set in environment variables');
+} else {
+  console.log('🟢 OpenAI API Key is configured in crisis detector');
 }
 
 const crisisIndicators = {
@@ -137,91 +121,197 @@ const protectiveFactors = {
   ],
 };
 
-export function assessCrisis(messages: Message[]): CrisisAssessment {
-  const recentMessages = messages.slice(-5);
-  const lastMessage = messages[messages.length - 1];
+async function analyzeMessagesWithAI(messages: Message[]): Promise<{
+  riskLevel: string;
+  analysis: string;
+  recommendations: string[];
+}> {
+  const messageContent = messages.map(msg => msg.content).join('\n');
   
-  const sentiment = analyzeSentiment(lastMessage.content);
-  const conversation = summarizeConversation(messages);
-  
-  const assessment = {
-    severity: "none" as CrisisAssessment["severity"],
-    confidence: 0,
-    triggers: [] as string[],
-    riskFactors: [] as string[],
-    recommendedActions: [] as string[],
-    urgency: false,
-    requiresProfessional: false,
-  };
+  try {
+    const completion = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "You are a mental health analysis assistant. Analyze the following messages for signs of crisis, emotional distress, or concerning patterns. Provide a risk assessment and recommendations."
+        },
+        {
+          role: "user",
+          content: messageContent
+        }
+      ],
+      model: "gpt-3.5-turbo",
+    });
 
-  // Check for crisis indicators
-  const indicators = detectCrisisIndicators(recentMessages);
-  const risks = detectRiskFactors(recentMessages);
-  const protective = detectProtectiveFactors(recentMessages);
+    const response = completion.choices[0]?.message?.content;
+    if (!response) throw new Error('No response from OpenAI');
 
-  // Assess severity
-  assessment.severity = calculateSeverity(indicators, risks, protective);
-  assessment.confidence = calculateConfidence(indicators, sentiment);
-  assessment.triggers = indicators;
-  assessment.riskFactors = risks;
-  assessment.recommendedActions = generateRecommendedActions(assessment.severity);
-  assessment.urgency = isUrgent(assessment.severity, indicators);
-  assessment.requiresProfessional = requiresProfessional(assessment.severity, risks);
+    // Parse the response (assuming a structured response)
+    const analysis = {
+      riskLevel: response.includes('high risk') ? 'high' : 
+                 response.includes('medium risk') ? 'medium' : 'low',
+      analysis: response,
+      recommendations: response.split('\n').filter(line => line.includes('recommend'))
+    };
 
-  // Generate safety plan if needed
-  if (assessment.severity !== "none" && assessment.severity !== "low") {
-    assessment.safetyPlan = generateSafetyPlan(assessment, protective);
+    return analysis;
+  } catch (error) {
+    console.error('Error analyzing messages with AI:', error);
+    return {
+      riskLevel: 'unknown',
+      analysis: 'Error analyzing messages',
+      recommendations: ['Seek professional help if in immediate crisis']
+    };
   }
+}
 
-  return assessment;
+export async function assessCrisis(messages: Message[]): Promise<CrisisAssessment> {
+  console.log('🚨 Starting crisis detection analysis', { messageCount: messages.length });
+
+  try {
+    const recentMessages = messages.slice(-5);
+    const lastMessage = messages[messages.length - 1];
+    
+    console.log('📊 Analyzing sentiment patterns');
+    const sentiment: SentimentAnalysis = await analyzeSentiment(lastMessage.content);
+    
+    console.log('💭 Analyzing conversation context');
+    const conversationSummary = await summarizeConversation(messages);
+    
+    console.log('🔍 Checking for crisis indicators');
+    const indicators = detectCrisisIndicators(recentMessages);
+    const risks = detectRiskFactors(recentMessages);
+    const protective = detectProtectiveFactors(recentMessages);
+
+    console.log('🔍 Checking for AI-powered analysis');
+    const aiAnalysis = await analyzeMessagesWithAI(messages);
+
+    console.log('⚖️ Evaluating severity level');
+    const severity = calculateSeverity(indicators, risks, protective);
+    let confidence = calculateConfidence(indicators, sentiment);
+    const recommendedActions = generateRecommendedActions(severity);
+    const urgency = isUrgent(severity, indicators);
+    const needsProfessional = requiresProfessional(severity, risks);
+
+    // Use conversation summary to enhance assessment
+    if (conversationSummary) {
+      // Add any additional risk indicators from conversation context
+      const contextualRisks = extractContextualRisks(conversationSummary.overview);
+      risks.push(...contextualRisks);
+
+      // Adjust confidence based on conversation context
+      const contextConfidence = calculateContextConfidence(conversationSummary.overview);
+      confidence *= contextConfidence;
+    }
+
+    let safetyPlan: SafetyPlan | undefined;
+    if (severity === 'medium' || severity === 'high' || severity === 'severe') {
+      safetyPlan = generateSafetyPlan({ 
+        severity, 
+        confidence, 
+        triggers: indicators, 
+        riskFactors: risks, 
+        recommendedActions, 
+        urgency, 
+        requiresProfessional: needsProfessional,
+        timestamp: new Date().toISOString()
+      }, protective);
+    }
+    
+    console.log('💡 Generating recommendations based on severity:', severity);
+    const baseRecommendations = generateRecommendedActions(severity);
+    const recommendations = [...new Set([...baseRecommendations, ...aiAnalysis.recommendations])];
+
+    const assessment: CrisisAssessment = {
+      severity,
+      confidence,
+      triggers: indicators,
+      riskFactors: risks,
+      recommendedActions: recommendations,
+      urgency,
+      requiresProfessional: needsProfessional,
+      timestamp: new Date().toISOString()
+    };
+
+    if (safetyPlan) {
+      assessment.safetyPlan = safetyPlan;
+    }
+
+    console.log('✅ Crisis detection complete', { assessment });
+    return assessment;
+  } catch (error) {
+    console.error('❌ Error in crisis detection:', error);
+    throw new Error('Failed to complete crisis detection');
+  }
 }
 
 function detectCrisisIndicators(messages: Message[]): string[] {
-  const indicators: string[] = [];
-  const text = messages.map(m => m.content.toLowerCase()).join(" ");
+  console.log('🔍 Checking crisis indicators in messages');
+  try {
+    const indicators: string[] = [];
+    const text = messages.map(m => m.content.toLowerCase()).join(" ");
 
-  // Check all types of indicators
-  Object.entries(crisisIndicators).forEach(([type, categories]) => {
-    Object.entries(categories).forEach(([category, phrases]) => {
-      phrases.forEach(phrase => {
-        if (text.includes(phrase)) {
-          indicators.push(`${type}:${category}:${phrase}`);
-        }
+    // Check all types of indicators
+    Object.entries(crisisIndicators).forEach(([type, categories]) => {
+      Object.entries(categories).forEach(([category, phrases]) => {
+        phrases.forEach(phrase => {
+          if (text.includes(phrase)) {
+            indicators.push(`${type}:${category}:${phrase}`);
+          }
+        });
       });
     });
-  });
 
-  return indicators;
+    console.log('✅ Crisis indicators check complete');
+    return indicators;
+  } catch (error) {
+    console.error('❌ Error checking crisis indicators:', error);
+    throw error;
+  }
 }
 
 function detectRiskFactors(messages: Message[]): string[] {
-  const factors: string[] = [];
-  const text = messages.map(m => m.content.toLowerCase()).join(" ");
+  console.log('🔍 Checking risk factors in messages');
+  try {
+    const factors: string[] = [];
+    const text = messages.map(m => m.content.toLowerCase()).join(" ");
 
-  Object.entries(riskFactors).forEach(([category, phrases]) => {
-    phrases.forEach(phrase => {
-      if (text.includes(phrase)) {
-        factors.push(`${category}:${phrase}`);
-      }
+    Object.entries(riskFactors).forEach(([category, phrases]) => {
+      phrases.forEach(phrase => {
+        if (text.includes(phrase)) {
+          factors.push(`${category}:${phrase}`);
+        }
+      });
     });
-  });
 
-  return factors;
+    console.log('✅ Risk factors check complete');
+    return factors;
+  } catch (error) {
+    console.error('❌ Error checking risk factors:', error);
+    throw error;
+  }
 }
 
 function detectProtectiveFactors(messages: Message[]): string[] {
-  const factors: string[] = [];
-  const text = messages.map(m => m.content.toLowerCase()).join(" ");
+  console.log('🔍 Checking protective factors in messages');
+  try {
+    const factors: string[] = [];
+    const text = messages.map(m => m.content.toLowerCase()).join(" ");
 
-  Object.entries(protectiveFactors).forEach(([category, phrases]) => {
-    phrases.forEach(phrase => {
-      if (text.includes(phrase)) {
-        factors.push(`${category}:${phrase}`);
-      }
+    Object.entries(protectiveFactors).forEach(([category, phrases]) => {
+      phrases.forEach(phrase => {
+        if (text.includes(phrase)) {
+          factors.push(`${category}:${phrase}`);
+        }
+      });
     });
-  });
 
-  return factors;
+    console.log('✅ Protective factors check complete');
+    return factors;
+  } catch (error) {
+    console.error('❌ Error checking protective factors:', error);
+    throw error;
+  }
 }
 
 function calculateSeverity(
@@ -229,6 +319,7 @@ function calculateSeverity(
   risks: string[],
   protective: string[]
 ): CrisisAssessment["severity"] {
+  console.log('⚖️ Evaluating severity based on indicators');
   const score = 
     indicators.length * 2 + 
     risks.length - 
@@ -243,8 +334,9 @@ function calculateSeverity(
 
 function calculateConfidence(
   indicators: string[],
-  sentiment: ReturnType<typeof analyzeSentiment>
+  sentiment: SentimentAnalysis
 ): number {
+  console.log('📊 Calculating confidence score');
   const explicitCount = indicators.filter(i => i.includes(":explicit:")).length;
   const implicitCount = indicators.filter(i => i.includes(":implicit:")).length;
   
@@ -255,6 +347,7 @@ function calculateConfidence(
 }
 
 function generateRecommendedActions(severity: CrisisAssessment["severity"]): string[] {
+  console.log('💡 Generating recommendations based on severity:', severity);
   const actions: string[] = [];
 
   switch (severity) {
@@ -290,6 +383,7 @@ function isUrgent(
   severity: CrisisAssessment["severity"],
   indicators: string[]
 ): boolean {
+  console.log('🚨 Checking if situation is urgent');
   return (
     severity === "severe" ||
     severity === "high" ||
@@ -301,6 +395,7 @@ function requiresProfessional(
   severity: CrisisAssessment["severity"],
   risks: string[]
 ): boolean {
+  console.log('👨‍⚕️ Checking if professional help is required');
   return (
     severity === "severe" ||
     severity === "high" ||
@@ -312,6 +407,7 @@ function generateSafetyPlan(
   assessment: CrisisAssessment,
   protective: string[]
 ): SafetyPlan {
+  console.log('📝 Generating safety plan');
   return {
     warningSignals: assessment.triggers.map(t => t.split(":")[2]),
     copingStrategies: [
@@ -335,15 +431,15 @@ function generateSafetyPlan(
     ],
     professionalResources: [
       {
-        name: "National Crisis Text Line",
+        name: "Crisis Services Canada",
         type: "Crisis Support",
-        contact: "Text HOME to 741741",
+        contact: "1-833-456-4566",
         hours: "24/7",
       },
       {
-        name: "SAMHSA National Helpline",
+        name: "Hope for Wellness Helpline",
         type: "Mental Health Support",
-        contact: "1-800-662-4357",
+        contact: "1-855-242-3310",
         hours: "24/7",
       },
     ],
@@ -357,4 +453,49 @@ function generateSafetyPlan(
       .filter(p => p.startsWith("personal:"))
       .map(p => p.split(":")[1]),
   };
+}
+
+function extractContextualRisks(summary: string): string[] {
+  const contextualRisks: string[] = [];
+  
+  // Check for patterns indicating isolation
+  if (summary.toLowerCase().includes('alone') || 
+      summary.toLowerCase().includes('lonely') || 
+      summary.toLowerCase().includes('isolated')) {
+    contextualRisks.push('social isolation');
+  }
+
+  // Check for patterns indicating hopelessness
+  if (summary.toLowerCase().includes('hopeless') || 
+      summary.toLowerCase().includes('pointless') || 
+      summary.toLowerCase().includes('give up')) {
+    contextualRisks.push('expressed hopelessness');
+  }
+
+  // Check for patterns indicating loss
+  if (summary.toLowerCase().includes('lost') || 
+      summary.toLowerCase().includes('death') || 
+      summary.toLowerCase().includes('died')) {
+    contextualRisks.push('recent loss or grief');
+  }
+
+  return contextualRisks;
+}
+
+function calculateContextConfidence(summary: string): number {
+  let contextConfidence = 1.0;
+
+  // Increase confidence if the conversation shows consistent patterns
+  if (summary.length > 200) {
+    contextConfidence *= 1.2; // More context generally means more confidence
+  }
+
+  // Decrease confidence if the conversation seems inconsistent or unclear
+  if (summary.toLowerCase().includes('unclear') || 
+      summary.toLowerCase().includes('inconsistent')) {
+    contextConfidence *= 0.8;
+  }
+
+  // Ensure confidence stays within reasonable bounds
+  return Math.min(Math.max(contextConfidence, 0.5), 1.5);
 }

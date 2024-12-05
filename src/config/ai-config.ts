@@ -73,13 +73,13 @@ export const systemConfig: SystemConfig = {
 
 export const aiConfig = {
   model: {
-    default: "gpt-4-0125-preview",
+    default: import.meta.env.VITE_OPENAI_MODEL || "gpt-4-0125-preview",
     fallback: "gpt-3.5-turbo",
     contextWindow: 8192,
     maxResponseTokens: 1024,
   },
   temperature: {
-    default: 0.7,
+    default: Number(import.meta.env.VITE_OPENAI_TEMPERATURE) || 0.7,
     empathetic: 0.8,
     precise: 0.3,
     creative: 0.9,

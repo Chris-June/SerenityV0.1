@@ -1,6 +1,19 @@
 import { Message } from "@/types";
 import { aiConfig } from "@/config/ai-config";
 import { searchSimilar } from "./knowledge-base";
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
+if (!import.meta.env.VITE_OPENAI_API_KEY) {
+  console.error(' OpenAI API Key is missing in conversation analyzer');
+  throw new Error('VITE_OPENAI_API_KEY is not set in environment variables');
+} else {
+  console.log(' OpenAI API Key is configured in conversation analyzer');
+}
 
 interface ConversationInsights {
   mood: {
@@ -31,24 +44,44 @@ interface TopicAnalysis {
 }
 
 export async function analyzeConversation(messages: Message[]): Promise<ConversationInsights> {
+  console.log(' Starting conversation analysis', { messageCount: messages.length });
   const recentMessages = messages.slice(-10); // Focus on recent context
   const userMessages = recentMessages.filter(m => m.sender === "user");
   const companionMessages = recentMessages.filter(m => m.sender === "companion");
 
-  // Analyze mood and intensity
-  const moodAnalysis = analyzeMood(userMessages);
-  const topicsFound = await analyzeTopics(userMessages);
-  const concernsIdentified = identifyConcerns(userMessages);
-  const progressTracking = trackProgress(recentMessages);
-  const engagementMetrics = calculateEngagement(recentMessages);
+  try {
+    // Analyze mood and intensity
+    console.log(' Analyzing mood and sentiment');
+    const moodAnalysis = analyzeMood(userMessages);
+    console.log(' Mood analysis complete:', moodAnalysis);
 
-  return {
-    mood: moodAnalysis,
-    topics: topicsFound,
-    concerns: concernsIdentified,
-    progress: progressTracking,
-    engagement: engagementMetrics,
-  };
+    console.log(' Analyzing conversation topics');
+    const topicsFound = await analyzeTopics(userMessages);
+    console.log(' Topics identified:', topicsFound);
+
+    console.log(' Identifying potential concerns');
+    const concernsIdentified = identifyConcerns(userMessages);
+    
+    console.log(' Tracking conversation progress');
+    const progressTracking = trackProgress(recentMessages);
+    
+    console.log(' Calculating engagement metrics');
+    const engagementMetrics = calculateEngagement(recentMessages);
+
+    const insights = {
+      mood: moodAnalysis,
+      topics: topicsFound,
+      concerns: concernsIdentified,
+      progress: progressTracking,
+      engagement: engagementMetrics,
+    };
+
+    console.log(' Conversation analysis complete', { insights });
+    return insights;
+  } catch (error) {
+    console.error(' Error in conversation analysis:', error);
+    throw error;
+  }
 }
 
 function analyzeMood(messages: Message[]): ConversationInsights["mood"] {

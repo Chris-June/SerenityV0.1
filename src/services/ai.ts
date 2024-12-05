@@ -26,11 +26,20 @@ export async function generateAIResponse(messages: Message[]): Promise<AIRespons
     // Get relevant resources
     const relevantResources = await searchSimilar(lastMessage.content, 3);
 
-    // Generate structured response
+    // Generate structured response using environment variables
+    const modelConfig = {
+      model: import.meta.env.VITE_OPENAI_MODEL || "gpt-4-0-mini",
+      temperature: Number(import.meta.env.VITE_OPENAI_TEMPERATURE) || 0.7,
+      maxTokens: Number(import.meta.env.VITE_OPENAI_MAX_TOKENS) || 200,
+      frequencyPenalty: Number(import.meta.env.VITE_OPENAI_FREQUENCY_PENALTY) || 0,
+      presencePenalty: Number(import.meta.env.VITE_OPENAI_PRESENCE_PENALTY) || 0
+    };
+
     const structuredMessages = await generateStructuredMessages(
       messages,
       conversationInsights,
-      relevantResources
+      relevantResources,
+      modelConfig
     );
 
     return {
@@ -55,7 +64,14 @@ export async function generateAIResponse(messages: Message[]): Promise<AIRespons
 async function generateStructuredMessages(
   messages: Message[],
   insights: Awaited<ReturnType<typeof analyzeConversation>>,
-  resources: Awaited<ReturnType<typeof searchSimilar>>
+  resources: Awaited<ReturnType<typeof searchSimilar>>,
+  modelConfig: {
+    model: string;
+    temperature: number;
+    maxTokens: number;
+    frequencyPenalty: number;
+    presencePenalty: number;
+  }
 ): Promise<StructuredResponse[]> {
   const structuredMessages: StructuredResponse[] = [];
 
