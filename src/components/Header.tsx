@@ -13,8 +13,8 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const features = [
   { id: 'mood', label: 'Mood Tracker', icon: Heart, path: '/mood' },
-  { id: 'breathing', label: 'Breathing Exercise', icon: Sparkles, path: '/breathing' },
-  { id: 'coping', label: 'Coping Strategies', icon: BookOpen, path: '/coping' },
+  { id: 'breathing', label: 'Breathing Exercise', icon: Sparkles, path: '/exercises/breathing' },
+  { id: 'coping', label: 'Coping Strategies', icon: BookOpen, path: '/resources/coping' },
   { id: 'chat', label: 'AI Chat', icon: MessageCircle, path: '/chat' },
   { id: 'affirmations', label: 'Affirmation Cards', icon: Sun, path: '/wellness?tab=affirmations' },
   { id: 'selfcare', label: 'Self-Care Reminders', icon: Bell, path: '/wellness?tab=selfcare' },

@@ -12,6 +12,8 @@ import { InsightsPage } from '@/pages/InsightsPage';
 import { ExercisesPage } from '@/pages/ExercisesPage';
 import { ResourcesPage } from '@/pages/ResourcesPage';
 import { WellnessPage } from '@/pages/WellnessPage';
+import { BreathingExercise } from '@/components/BreathingExercise';
+import { CopingStrategies } from '@/components/CopingStrategies';
 
 function App() {
   const [started, setStarted] = useState(false);
@@ -50,8 +52,14 @@ function App() {
               <Route path="/journal" element={<JournalPage />} />
               <Route path="/insights" element={<InsightsPage />} />
               <Route path="/exercises" element={<ExercisesPage />} />
+              <Route path="/exercises/breathing" element={<BreathingExercise />} />
               <Route path="/resources" element={<ResourcesPage />} />
+              <Route path="/resources/coping" element={<CopingStrategies />} />
               <Route path="/wellness" element={<WellnessPage />} />
+              <Route path="/mood" element={<Navigate to="/wellness?tab=mood" replace />} />
+              <Route path="/breathing" element={<Navigate to="/exercises?type=breathing" replace />} />
+              <Route path="/coping" element={<Navigate to="/resources?section=coping" replace />} />
+              <Route path="/chat" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
