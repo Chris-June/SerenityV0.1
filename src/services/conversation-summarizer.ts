@@ -1,4 +1,4 @@
-import { Message } from "@/types";
+import { Message, AIConfig } from "@/types";
 import { analyzeSentiment, getSentimentSummary } from "./sentiment-analyzer";
 import { aiConfig } from "@/config/ai-config";
 import OpenAI from 'openai';
@@ -48,7 +48,9 @@ interface SegmentAnalysis {
   timestamp: Date;
 }
 
-export function summarizeConversation(messages: Message[]): ConversationSummary {
+const config: AIConfig = aiConfig;
+
+export async function summarizeConversation(messages: Message[]): Promise<ConversationSummary> {
   console.log(' Starting conversation summarization', { messageCount: messages.length });
   
   if (messages.length === 0) {
@@ -58,7 +60,7 @@ export function summarizeConversation(messages: Message[]): ConversationSummary 
 
   try {
     console.log(' Analyzing conversation segments');
-    const segments = analyzeSegments(messages);
+    const segments = await analyzeSegments(messages);
     
     console.log(' Analyzing conversation topics');
     const topics = analyzeTopics(segments);
@@ -67,11 +69,11 @@ export function summarizeConversation(messages: Message[]): ConversationSummary 
     const insights = generateInsights(segments, topics);
     
     console.log(' Calculating conversation metrics');
-    const metrics = calculateMetrics(messages);
+    const metrics = await calculateMetrics(messages);
 
     const summary = {
-      overview: generateOverview(segments, topics),
-      keyPoints: extractKeyPoints(segments),
+      overview: await generateOverview(segments, topics),
+      keyPoints: await extractKeyPoints(segments),
       emotionalJourney: trackEmotionalJourney(segments),
       topics,
       insights,
@@ -86,16 +88,16 @@ export function summarizeConversation(messages: Message[]): ConversationSummary 
   }
 }
 
-function analyzeSegments(messages: Message[]): SegmentAnalysis[] {
-  return messages.map(message => {
-    const sentiment = analyzeSentiment(message.content);
+async function analyzeSegments(messages: Message[]): Promise<SegmentAnalysis[]> {
+  return Promise.all(messages.map(async message => {
+    const sentiment = await analyzeSentiment(message.content);
     return {
       content: message.content,
       sentiment: sentiment.score,
       topics: sentiment.topics.map(t => t.name),
-      timestamp: message.timestamp,
+      timestamp: new Date(message.timestamp),
     };
-  });
+  }));
 }
 
 function analyzeTopics(segments: SegmentAnalysis[]): ConversationSummary["topics"] {
@@ -154,45 +156,48 @@ function generateInsights(
   return insights;
 }
 
-function generateOverview(
+async function generateOverview(
   segments: SegmentAnalysis[],
   topics: ConversationSummary["topics"]
-): string {
-  const duration = Math.round(
-    (segments[segments.length - 1].timestamp.getTime() - 
-     segments[0].timestamp.getTime()) / 60000
-  );
-  
-  const mainTopics = topics
-    .sort((a, b) => b.mentions - a.mentions)
-    .slice(0, 3)
-    .map(t => t.name);
+): Promise<string> {
+  try {
+    const conversationContext = segments.map(segment => ({
+      content: segment.content,
+      sentiment: segment.sentiment,
+      topics: segment.topics
+    }));
 
-  const overallSentiment = average(segments.map(s => s.sentiment));
-  const sentimentDescription = 
-    overallSentiment > 0.3 ? "positive" :
-    overallSentiment < -0.3 ? "challenging" :
-    "balanced";
+    const prompt = `Please provide a concise overview of this conversation. Key points:
+    - Main topics discussed: ${topics.map(t => t.name).join(', ')}
+    - Conversation segments: ${JSON.stringify(conversationContext)}
+    Focus on the main themes, progression of discussion, and any notable patterns.`;
 
-  return `This ${duration}-minute conversation focused on ${mainTopics.join(", ")}. ` +
-    `The overall tone was ${sentimentDescription}, with ${segments.length} exchanges.`;
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: config.model.default,
+      temperature: config.getTemperature("default"),
+      max_tokens: 250
+    });
+
+    return completion.choices[0]?.message?.content || 'Unable to generate overview';
+  } catch (error) {
+    console.error('Error generating overview with OpenAI:', error);
+    // Fallback to basic overview generation
+    return `Discussion covering ${topics.length} topics: ${topics.map(t => t.name).join(', ')}. ${
+      segments.length
+    } message segments analyzed.`;
+  }
 }
 
-function extractKeyPoints(segments: SegmentAnalysis[]): string[] {
-  const keyPoints: string[] = [];
-  const significantSegments = segments.filter(s => 
+async function extractKeyPoints(segments: SegmentAnalysis[]): Promise<string[]> {
+  return Promise.all(segments.filter(s => 
     Math.abs(s.sentiment) > 0.5 || s.topics.length > 1
+  ).map(async segment => {
+    const sentiment = await analyzeSentiment(segment.content);
+    return getSentimentSummary(sentiment);
+  })).then(summaries => 
+    [...new Set(summaries.filter(Boolean))].slice(0, 5)
   );
-
-  significantSegments.forEach(segment => {
-    const sentiment = analyzeSentiment(segment.content);
-    const summary = getSentimentSummary(sentiment);
-    if (summary) {
-      keyPoints.push(summary);
-    }
-  });
-
-  return [...new Set(keyPoints)].slice(0, 5); // Unique points, max 5
 }
 
 function trackEmotionalJourney(segments: SegmentAnalysis[]): ConversationSummary["emotionalJourney"] {
@@ -205,19 +210,16 @@ function trackEmotionalJourney(segments: SegmentAnalysis[]): ConversationSummary
   };
 }
 
-function calculateMetrics(messages: Message[]): ConversationSummary["metrics"] {
-  const duration = (
-    messages[messages.length - 1].timestamp.getTime() -
-    messages[0].timestamp.getTime()
-  ) / 60000;
+async function calculateMetrics(messages: Message[]): Promise<ConversationSummary["metrics"]> {
+  const duration = (messages[messages.length - 1].timestamp - messages[0].timestamp) / 60000;
 
   const responseTimes = messages
     .slice(1)
     .map((msg, i) => 
-      msg.timestamp.getTime() - messages[i].timestamp.getTime()
+      Number(msg.timestamp) - Number(messages[i].timestamp)
     );
 
-  const engagementScore = calculateEngagementScore(messages);
+  const engagementScore = await calculateEngagementScore(messages);
 
   return {
     duration,
@@ -227,7 +229,7 @@ function calculateMetrics(messages: Message[]): ConversationSummary["metrics"] {
   };
 }
 
-function calculateEngagementScore(messages: Message[]): number {
+async function calculateEngagementScore(messages: Message[]): Promise<number> {
   const factors = {
     responseTime: 0.3,
     messageLength: 0.3,
@@ -235,9 +237,9 @@ function calculateEngagementScore(messages: Message[]): number {
   };
 
   const scores = {
-    responseTime: calculateResponseTimeScore(messages),
+    responseTime: await calculateResponseTimeScore(messages),
     messageLength: calculateMessageLengthScore(messages),
-    topicContinuity: calculateTopicContinuityScore(messages),
+    topicContinuity: await calculateTopicContinuityScore(messages),
   };
 
   return Object.entries(factors).reduce(
@@ -251,7 +253,7 @@ function calculateResponseTimeScore(messages: Message[]): number {
   const responseTimes = messages
     .slice(1)
     .map((msg, i) => 
-      msg.timestamp.getTime() - messages[i].timestamp.getTime()
+      Number(msg.timestamp) - Number(messages[i].timestamp)
     );
 
   const avgResponseTime = average(responseTimes);
@@ -263,22 +265,21 @@ function calculateMessageLengthScore(messages: Message[]): number {
   return Math.min(avgLength / 100, 1); // Normalize to 0-1
 }
 
-function calculateTopicContinuityScore(messages: Message[]): number {
+async function calculateTopicContinuityScore(messages: Message[]): Promise<number> {
   let continuityCount = 0;
   
-  messages.slice(1).forEach((msg, i) => {
-    const prevTopics = analyzeSentiment(messages[i].content).topics;
-    const currentTopics = analyzeSentiment(msg.content).topics;
+  return Promise.all(messages.slice(1).map(async (msg, i) => {
+    const prevTopics = await analyzeSentiment(messages[i].content).then(analysis => analysis.topics);
+    const currentTopics = await analyzeSentiment(msg.content).then(analysis => analysis.topics);
     
-    if (hasCommonElements(
+    return hasCommonElements(
       prevTopics.map(t => t.name),
       currentTopics.map(t => t.name)
-    )) {
-      continuityCount++;
-    }
+    );
+  })).then(results => {
+    continuityCount = results.filter(Boolean).length;
+    return continuityCount / (messages.length - 1);
   });
-
-  return continuityCount / (messages.length - 1);
 }
 
 function analyzeSentimentPattern(segments: SegmentAnalysis[]): string | null {

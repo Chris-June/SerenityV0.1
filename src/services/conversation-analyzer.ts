@@ -104,7 +104,8 @@ function analyzeMood(messages: Message[]): ConversationInsights["mood"] {
     const words = msg.content.toLowerCase().split(/\s+/);
     
     // Check mood keywords
-    for (const [type, keywords] of Object.entries(aiConfig.contextTracking.moodKeywords)) {
+    const moodKeywords = aiConfig.contextTracking?.moodKeywords as Record<string, string[]>;
+    for (const [type, keywords] of Object.entries(moodKeywords)) {
       const matchCount = keywords.filter(k => words.includes(k)).length;
       if (matchCount > 0) {
         currentMood = type;
@@ -161,7 +162,7 @@ function identifyConcerns(messages: Message[]): string[] {
   const text = messages.map(m => m.content).join(" ").toLowerCase();
 
   // Check for crisis indicators
-  aiConfig.prompts.crisis.detection.forEach(phrase => {
+  aiConfig.prompts.crisis.detection.forEach((phrase: string) => {
     if (text.includes(phrase)) {
       concerns.add("crisis");
     }
@@ -244,8 +245,9 @@ function calculateIntensity(text: string): number {
   let intensity = 0;
   let count = 0;
 
-  Object.entries(aiConfig.contextTracking.intensityIndicators).forEach(([level, indicators]) => {
-    indicators.forEach(indicator => {
+  const intensityIndicators = aiConfig.contextTracking?.intensityIndicators as { [key: string]: string[] };
+  Object.entries(intensityIndicators).forEach(([level, indicators]: [string, string[]]) => {
+    indicators.forEach((indicator: string) => {
       if (words.includes(indicator)) {
         intensity += level === "high" ? 1 : level === "medium" ? 0.6 : 0.3;
         count++;

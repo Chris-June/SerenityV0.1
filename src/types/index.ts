@@ -88,3 +88,36 @@ export interface SystemConfig {
   closingStatement: string;
   privacyNotice: string;
 }
+
+export interface AIConfig {
+  model: {
+    default: string;
+    fallback: string;
+    contextWindow: number;
+    maxResponseTokens: number;
+  };
+  temperature: {
+    default: number;
+    empathetic: number;
+    precise: number;
+    creative: number;
+  };
+  roles: {
+    therapist: string;
+    coach: string;
+    friend: string;
+  };
+  prompts: Record<string, any>;
+  safety: Record<string, any>;
+  contextTracking?: {
+    moodKeywords: {
+      [mood: string]: string[];
+    };
+    intensityIndicators: {
+      high: string[];
+      medium: string[];
+      low: string[];
+    };
+  };
+  getTemperature(mode?: keyof AIConfig['temperature']): number;
+}

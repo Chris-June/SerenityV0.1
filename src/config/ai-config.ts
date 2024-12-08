@@ -76,13 +76,11 @@ export const aiConfig = {
     default: import.meta.env.VITE_OPENAI_MODEL || "gpt-4-0125-preview",
     fallback: "gpt-3.5-turbo",
     contextWindow: 8192,
-    maxResponseTokens: 1024,
+    maxResponseTokens: 2048
   },
   temperature: {
-    default: Number(import.meta.env.VITE_OPENAI_TEMPERATURE) || 0.7,
-    empathetic: 0.8,
-    precise: 0.3,
-    creative: 0.9,
+    default: 0.5,
+    empathetic: 0.7
   },
   roles: {
     therapist: "empathetic mental health professional",
@@ -132,19 +130,13 @@ export const aiConfig = {
   },
   contextTracking: {
     moodKeywords: {
-      positive: ["happy", "grateful", "excited", "peaceful", "confident"],
-      negative: ["sad", "anxious", "frustrated", "overwhelmed", "hopeless"],
-      neutral: ["okay", "fine", "normal", "unsure"]
-    },
-    topicCategories: [
-      "emotions", "relationships", "work", "health", "personal-growth",
-      "anxiety", "depression", "stress", "sleep", "self-care"
-    ],
-    intensityIndicators: {
-      high: ["extremely", "severely", "always", "never", "completely"],
-      medium: ["often", "sometimes", "frequently", "occasionally"],
-      low: ["rarely", "slightly", "a bit", "somewhat"]
+      positive: ['happy', 'joy', 'excited', 'great', 'awesome', 'wonderful', 'amazing'],
+      negative: ['sad', 'upset', 'angry', 'frustrated', 'depressed', 'anxious', 'worried'],
+      neutral: ['okay', 'fine', 'alright', 'neutral']
     }
+  },
+  getTemperature(mode: keyof typeof aiConfig.temperature = "default"): number {
+    return this.temperature[mode];
   }
 };
 
@@ -206,16 +198,12 @@ export function analyzeMoodIntensity(text: string): number {
   return count > 0 ? Math.min(intensity / count, 1) : 0.5;
 }
 
-export function getTemperature(mode: keyof typeof aiConfig.temperature = "default"): number {
-  return aiConfig.temperature[mode];
-}
-
 export function getModelConfig(useDefault = true) {
   return {
     model: useDefault ? aiConfig.model.default : aiConfig.model.fallback,
     maxTokens: aiConfig.model.maxResponseTokens,
     contextWindow: aiConfig.model.contextWindow,
-    temperature: getTemperature(), // Add temperature here
+    temperature: aiConfig.getTemperature(), // Add temperature here
   };
 }
 
