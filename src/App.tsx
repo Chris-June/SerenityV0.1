@@ -12,7 +12,10 @@ import { InsightsPage } from '@/pages/InsightsPage';
 import { ExercisesPage } from '@/pages/ExercisesPage';
 import { ResourcesPage } from '@/pages/ResourcesPage';
 import { WellnessPage } from '@/pages/WellnessPage';
-import { BreathingExercise } from '@/components/BreathingExercise';
+import { BreathingExercise } from '@/components/exercises/BreathingExercise';
+import { GuidedMeditation } from '@/components/exercises/GuidedMeditation';
+import { GratitudePractice } from '@/components/exercises/GratitudePractice';
+import { MoodLifting } from '@/components/exercises/MoodLifting';
 import { CopingStrategies } from '@/components/CopingStrategies';
 
 function App() {
@@ -53,6 +56,9 @@ function App() {
               <Route path="/insights" element={<InsightsPage />} />
               <Route path="/exercises" element={<ExercisesPage />} />
               <Route path="/exercises/breathing" element={<BreathingExercise />} />
+              <Route path="/exercises/meditation" element={<GuidedMeditation />} />
+              <Route path="/exercises/gratitude" element={<GratitudePractice />} />
+              <Route path="/exercises/mood" element={<MoodLifting />} />
               <Route path="/resources" element={<ResourcesPage />} />
               <Route path="/resources/coping" element={<CopingStrategies />} />
               <Route path="/wellness" element={<WellnessPage />} />

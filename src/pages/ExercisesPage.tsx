@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Brain, Heart, Wind, Smile, Timer, PlayCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 
 const exercises = [
   {
@@ -13,6 +14,7 @@ const exercises = [
     category: 'Relaxation',
     icon: Wind,
     progress: 75,
+    path: '/exercises/breathing'
   },
   {
     id: 'meditation',
@@ -22,6 +24,7 @@ const exercises = [
     category: 'Mindfulness',
     icon: Brain,
     progress: 30,
+    path: '/exercises/meditation'
   },
   {
     id: 'gratitude',
@@ -31,6 +34,7 @@ const exercises = [
     category: 'Positivity',
     icon: Heart,
     progress: 50,
+    path: '/exercises/gratitude'
   },
   {
     id: 'mood-lift',
@@ -40,10 +44,13 @@ const exercises = [
     category: 'Emotional Wellness',
     icon: Smile,
     progress: 0,
+    path: '/exercises/mood'
   },
 ];
 
 export function ExercisesPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
@@ -87,7 +94,10 @@ export function ExercisesPage() {
                       <Timer className="w-4 h-4" />
                       {exercise.duration}
                     </span>
-                    <Button className="gap-2">
+                    <Button 
+                      className="gap-2"
+                      onClick={() => navigate(exercise.path)}
+                    >
                       <PlayCircle className="w-4 h-4" />
                       Start Exercise
                     </Button>
