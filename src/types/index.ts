@@ -10,7 +10,7 @@ export interface Message {
   timestamp: number;
   sender: 'user' | 'ai';
   type: 'text' | 'action' | 'system';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean>;
 }
 
 export interface Mood {
@@ -107,8 +107,8 @@ export interface AIConfig {
     coach: string;
     friend: string;
   };
-  prompts: Record<string, any>;
-  safety: Record<string, any>;
+  prompts: Record<string, string | number | boolean>;
+  safety: Record<string, string | number | boolean>;
   contextTracking?: {
     moodKeywords: {
       [mood: string]: string[];

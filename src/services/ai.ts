@@ -6,7 +6,6 @@ import {
   detectCrisis, 
   getCrisisResponse,
   getSafetyDisclaimer,
-  getTemperature,
   getModelConfig
 } from "@/config/ai-config";
 import { analyzeConversation } from "./conversation-analyzer";
@@ -28,8 +27,7 @@ export async function generateAIResponse(messages: Message[]): Promise<AIRespons
 
     // Use proper config management
     const modelConfig = getModelConfig();
-    const temperature = getTemperature();
-    modelConfig.temperature = temperature; // Override with dynamic temperature
+    modelConfig.temperature = aiConfig.getTemperature(); // Override with dynamic temperature
 
     const structuredMessages = await generateStructuredMessages(
       messages,
