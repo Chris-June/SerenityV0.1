@@ -1,26 +1,22 @@
-import { Github, Twitter, Linkedin, Mail } from 'lucide-react';
+import { Twitter, Linkedin, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function Footer() {
   const socialLinks = [
     {
       icon: Twitter,
-      href: 'https://twitter.com/intellisync',
+      href: 'https://x.com/Intelli_Sync',
       label: 'Twitter',
     },
-    {
-      icon: Github,
-      href: 'https://github.com/intellisync',
-      label: 'GitHub',
-    },
+    
     {
       icon: Linkedin,
-      href: 'https://linkedin.com/company/intellisync',
+      href: 'https://www.linkedin.com/company/intellisync-solutions',
       label: 'LinkedIn',
     },
     {
       icon: Mail,
-      href: 'mailto:contact@intellisync.com',
+      href: 'mailto:chris.june@intellisync.ca',
       label: 'Email',
     },
   ];
@@ -58,7 +54,7 @@ export function Footer() {
             <span className="animate-text bg-gradient-to-r from-primary via-emerald-500 via-teal-400 to-primary bg-clip-text text-transparent bg-300%">
               Powered by{' '}
               <a
-                href="https://intellisync.com"
+                href="https://intellisyncsolutions.io"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium hover:underline"

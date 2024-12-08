@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { 
   Heart, 
-  MessageCircle, 
-  Shield, 
+ 
   Wind, 
   Sparkles,
   Brain,
@@ -15,6 +14,7 @@ import {
 import { motion } from 'framer-motion';
 import { SentimentDisplay } from '@/components/insights/SentimentDisplay';
 import { RecommendationList } from '@/components/insights/RecommendationList';
+import { Recommendation } from '@/types/recommendation';
 import { ConversationSummary } from '@/components/insights/ConversationSummary';
 import { useState, useEffect } from 'react';
 
@@ -48,26 +48,26 @@ const demoSentiment = {
 
 const demoRecommendations = [
   {
-    type: 'technique',
+    type: "technique" as const,
     title: 'Morning Mindfulness Ritual',
     description: 'Start your day with a 5-minute mindfulness practice to set a positive tone.',
     priority: 0.9,
     tags: ['mindfulness', 'morning-routine', 'wellness'],
     timeRequired: '5 minutes',
-    difficulty: 'beginner',
+    difficulty: 'beginner' as const,
     effectiveness: 0.85,
   },
   {
-    type: 'activity',
+    type: "activity" as const,
     title: 'Nature Walk Meditation',
     description: 'Combine gentle exercise with mindfulness through a guided nature walk.',
     priority: 0.8,
     tags: ['exercise', 'outdoors', 'meditation'],
     timeRequired: '20 minutes',
-    difficulty: 'beginner',
+    difficulty: 'beginner' as const,
     effectiveness: 0.9,
   },
-];
+] satisfies Recommendation[];
 
 const demoSummary = {
   overview: "Recent conversations show positive engagement with wellness practices and growing emotional awareness.",
@@ -112,6 +112,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // Add keyframes to document
     const style = document.createElement('style');
     style.textContent = `
@@ -147,6 +148,8 @@ export function LandingPage({ onStart }: LandingPageProps) {
       document.head.removeChild(style);
     };
   }, []);
+
+  if (!mounted) return null;
 
   const features = [
     {
@@ -244,7 +247,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            AI Mental Wellness
+            Better Mental Wellness
           </motion.h1>
           <motion.p
             className="text-xl text-muted-foreground text-center mb-8 max-w-2xl mx-auto"
@@ -265,7 +268,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
               onClick={onStart}
               className="text-lg px-8 py-6 bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 group"
             >
-              Begin Your Journey
+              Click Here to Enter
               <Sparkles className="ml-2 h-4 w-4 group-hover:animate-pulse" />
             </Button>
           </motion.div>
