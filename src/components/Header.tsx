@@ -67,15 +67,6 @@ export function Header() {
 
         {/* Right Section - Features Menu & Theme Toggle */}
         <div className="flex items-center space-x-4">
-          {/* Get Started Button - Hidden on Mobile */}
-          <Button
-            variant="default"
-            className="hidden md:inline-flex bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={() => navigate('/')}
-          >
-            Get Started
-          </Button>
-
           {/* Features Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
