@@ -17,6 +17,7 @@ import { RecommendationList } from '@/components/insights/RecommendationList';
 import { Recommendation } from '@/types/recommendation';
 import { ConversationSummary } from '@/components/insights/ConversationSummary';
 import { useState, useEffect } from 'react';
+import { FeaturesModal } from '@/components/modals/FeaturesModal';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -110,6 +111,7 @@ const demoSummary = {
 
 export function LandingPage({ onStart }: LandingPageProps) {
   const [mounted, setMounted] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<(typeof features)[0] | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -118,10 +120,10 @@ export function LandingPage({ onStart }: LandingPageProps) {
     style.textContent = `
       @keyframes glow {
         0%, 100% {
-          box-shadow: 0 0 15px #22c55e, 0 0 30px #22c55e, 0 0 45px #22c55e;
+          box-shadow: 0 0 8px #22c55e, 0 0 15px #22c55e, 0 0 22px #22c55e;
         }
         50% {
-          box-shadow: 0 0 30px #22c55e, 0 0 60px #22c55e, 0 0 90px #22c55e;
+          box-shadow: 0 0 15px #22c55e, 0 0 30px #22c55e, 0 0 45px #22c55e;
         }
       }
       .glow-effect {
@@ -156,44 +158,212 @@ export function LandingPage({ onStart }: LandingPageProps) {
       icon: Heart,
       title: 'Emotional Support',
       description: 'A safe space to express your feelings and thoughts without judgment',
+      expandedContent: {
+        overview: 'Our emotional support system provides a judgment-free environment where you can freely express your thoughts, feelings, and concerns. Using advanced natural language processing, we understand the nuances of your emotions and provide appropriate support.',
+        benefits: [
+          'Express yourself freely without fear of judgment',
+          'Receive empathetic and understanding responses',
+          'Track your emotional journey over time',
+          'Access support 24/7 whenever you need it'
+        ],
+        howItWorks: [
+          'Start a conversation about anything that\'s on your mind',
+          'Our AI analyzes your emotional state and context',
+          'Receive personalized responses and support',
+          'Get suggestions for coping strategies when needed'
+        ],
+        tips: [
+          'Be honest and open about your feelings',
+          'Use specific examples when describing situations',
+          'Take time to reflect on the responses',
+          'Regular check-ins can help track emotional patterns'
+        ]
+      }
     },
     {
       icon: Brain,
       title: 'Mental Wellness',
       description: 'Evidence-based techniques to support your mental health journey',
+      expandedContent: {
+        overview: 'Our mental wellness features are built on scientifically-proven techniques and strategies to support your psychological well-being. We combine cognitive behavioral therapy principles with modern technology to provide effective mental health support.',
+        benefits: [
+          'Access to evidence-based mental health techniques',
+          'Personalized strategies based on your needs',
+          'Progress tracking and insights',
+          'Integration with professional mental health resources'
+        ],
+        howItWorks: [
+          'Complete an initial assessment of your mental health needs',
+          'Receive personalized recommendations and techniques',
+          'Practice exercises and track your progress',
+          'Get regular feedback and adjustments to your plan'
+        ],
+        tips: [
+          'Consistency is key - try to practice techniques regularly',
+          'Start with shorter sessions and gradually increase duration',
+          'Keep notes about what works best for you',
+          'Don\'t hesitate to adjust techniques to fit your needs'
+        ]
+      }
     },
     {
       icon: BarChart3,
       title: 'Sentiment Analysis',
       description: 'Advanced emotional analysis with real-time insights and patterns',
       new: true,
+      expandedContent: {
+        overview: 'Our sentiment analysis feature uses cutting-edge AI to analyze your emotional patterns and provide real-time insights. This helps you better understand your emotional trends and identify areas for growth.',
+        benefits: [
+          'Real-time emotional pattern recognition',
+          'Detailed mood tracking and analysis',
+          'Identification of emotional triggers',
+          'Personalized recommendations based on patterns'
+        ],
+        howItWorks: [
+          'AI analyzes your conversations and interactions',
+          'Emotional patterns are identified and categorized',
+          'Visual representations of your emotional journey',
+          'Actionable insights are generated based on analysis'
+        ],
+        tips: [
+          'Regular interaction provides more accurate analysis',
+          'Review your emotional patterns weekly',
+          'Use insights to identify triggers and patterns',
+          'Share relevant insights with your mental health professional'
+        ]
+      }
     },
     {
       icon: Lightbulb,
       title: 'Smart Recommendations',
       description: 'Personalized suggestions based on your unique needs and progress',
       new: true,
+      expandedContent: {
+        overview: 'Our smart recommendation system learns from your interactions and progress to provide personalized suggestions that evolve with your journey. Using advanced machine learning, we tailor recommendations to your specific needs and goals.',
+        benefits: [
+          'Personalized recommendations based on your progress',
+          'Adaptive suggestions that evolve with you',
+          'Integration with your daily routine',
+          'Evidence-based activities and exercises'
+        ],
+        howItWorks: [
+          'System analyzes your usage patterns and preferences',
+          'AI generates personalized recommendations',
+          'Feedback is collected to improve future suggestions',
+          'Recommendations adapt based on your progress'
+        ],
+        tips: [
+          'Provide feedback on recommendations to improve accuracy',
+          'Try different suggested activities to find what works best',
+          'Track your progress with recommended activities',
+          'Balance different types of recommended activities'
+        ]
+      }
     },
     {
       icon: LineChart,
       title: 'Progress Tracking',
       description: 'Monitor your emotional well-being with intuitive mood tracking',
+      expandedContent: {
+        overview: 'Our progress tracking feature helps you visualize and understand your emotional well-being journey. With intuitive charts and detailed insights, you can see how far you\'ve come and identify areas for growth.',
+        benefits: [
+          'Visual representation of your progress',
+          'Detailed insights into patterns and trends',
+          'Goal setting and milestone tracking',
+          'Export capabilities for sharing with professionals'
+        ],
+        howItWorks: [
+          'Regular mood and activity logging',
+          'AI-powered pattern recognition',
+          'Generation of progress reports and insights',
+          'Goal tracking and milestone celebrations'
+        ],
+        tips: [
+          'Log your mood at consistent times each day',
+          'Use tags to track specific triggers or situations',
+          'Review your progress weekly and monthly',
+          'Share progress reports with your support network'
+        ]
+      }
     },
     {
       icon: Wind,
       title: 'Breathing Exercises',
       description: 'Simple techniques to help manage stress and anxiety',
+      expandedContent: {
+        overview: 'Our breathing exercises feature offers a variety of research-backed breathing techniques to help you manage stress, reduce anxiety, and improve focus. These exercises can be done anywhere, anytime.',
+        benefits: [
+          'Immediate stress and anxiety relief',
+          'Improved focus and concentration',
+          'Better sleep quality',
+          'Enhanced emotional regulation'
+        ],
+        howItWorks: [
+          'Choose from various breathing techniques',
+          'Follow guided animations and instructions',
+          'Track your practice sessions',
+          'Receive recommendations for specific situations'
+        ],
+        tips: [
+          'Start with short sessions (2-3 minutes)',
+          'Practice in a quiet, comfortable environment',
+          'Use reminders to maintain regular practice',
+          'Try different techniques for different situations'
+        ]
+      }
     },
     {
       icon: AlertCircle,
       title: 'Crisis Detection',
       description: 'Proactive risk assessment and immediate support resources',
       new: true,
+      expandedContent: {
+        overview: 'Our crisis detection system uses advanced AI to identify potential crisis situations and provide immediate access to appropriate support resources. This proactive approach helps ensure you get help when you need it most.',
+        benefits: [
+          'Early detection of potential crisis situations',
+          'Immediate access to support resources',
+          'Integration with emergency services',
+          'Customizable emergency contact list'
+        ],
+        howItWorks: [
+          'AI monitors conversations for crisis indicators',
+          'Risk assessment is performed in real-time',
+          'Immediate connection to appropriate resources',
+          'Optional notification of emergency contacts'
+        ],
+        tips: [
+          'Keep emergency contact information up to date',
+          'Familiarize yourself with available resources',
+          'Don\'t hesitate to use crisis support',
+          'Share relevant information with your support network'
+        ]
+      }
     },
     {
       icon: Fingerprint,
       title: 'Private & Secure',
       description: 'Your data is protected with state-of-the-art encryption',
+      expandedContent: {
+        overview: 'We prioritize your privacy and security with state-of-the-art encryption and strict data protection protocols. Your personal information and conversations are kept completely confidential and secure.',
+        benefits: [
+          'End-to-end encryption for all data',
+          'Strict privacy controls and permissions',
+          'Regular security audits and updates',
+          'Transparent data handling policies'
+        ],
+        howItWorks: [
+          'Data is encrypted during transmission and storage',
+          'Regular security updates and maintenance',
+          'Strict access controls and authentication',
+          'Automated security monitoring and threat detection'
+        ],
+        tips: [
+          'Use a strong, unique password',
+          'Enable two-factor authentication',
+          'Regularly review privacy settings',
+          'Keep your app and system updated'
+        ]
+      }
     },
   ];
 
@@ -405,12 +575,15 @@ export function LandingPage({ onStart }: LandingPageProps) {
                       >
                         <Icon className="h-6 w-6 text-white" />
                       </motion.div>
-                      <h3 className="font-semibold animate-text bg-gradient-to-r from-primary via-emerald-500 via-teal-400 to-primary bg-clip-text text-transparent bg-300%">
-                        {feature.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {feature.description}
-                      </p>
+                      <h3 className="text-xl font-semibold mt-4 mb-2">{feature.title}</h3>
+                      <p className="text-muted-foreground mb-4">{feature.description}</p>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => setSelectedFeature(feature)}
+                      >
+                        Learn More
+                      </Button>
                     </div>
                   </div>
                 </motion.div>
@@ -439,6 +612,11 @@ export function LandingPage({ onStart }: LandingPageProps) {
           </div>
         </motion.div>
       </div>
+      <FeaturesModal
+        isOpen={!!selectedFeature}
+        onClose={() => setSelectedFeature(null)}
+        feature={selectedFeature || undefined}
+      />
     </div>
   );
 }
